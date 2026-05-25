@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KATACHI — Production Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #c8f542;
+    --accent-dim: rgba(200,245,66,0.12);
+    --bg: #080808;
+    --surface: rgba(255,255,255,0.025);
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --text: #ffffff;
+    --text-muted: rgba(255,255,255,0.35);
+    --text-dim: rgba(255,255,255,0.15);
+    --danger: #ff4455;
+    --mono: 'Space Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── PASSWORD GATE ── */
+  #gate {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  #gate.hidden { display: none; }
+
+  .gate-logo {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.4em;
+    color: var(--accent);
+  }
+
+  .gate-sub {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    margin-top: -24px;
+  }
+
+  .gate-box {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 280px;
+  }
+
+  .gate-box input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 14px 16px;
+    outline: none;
+    letter-spacing: 0.15em;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+
+  .gate-box input:focus { border-color: var(--accent); }
+
+  .gate-box button {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #080808;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .gate-box button:hover { opacity: 0.85; }
+
+  .gate-error {
+    font-size: 10px;
+    color: var(--danger);
+    text-align: center;
+    letter-spacing: 0.1em;
+    min-height: 16px;
+  }
+
+  /* ── MAIN APP ── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+  #app.visible { display: flex; }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8,8,8,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .header-left {
+    display: flex; align-items: center; gap: 16px;
+  }
+
+  .logo {
+    font-family: var(--display);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+  }
+
+  .divider { width: 1px; height: 18px; background: var(--border); }
+
+  .header-tag {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+  }
+
+  .ep-badge {
+    font-size: 9px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,245,66,0.2);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 3px 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .header-right { display: flex; gap: 10px; align-items: center; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 6px 12px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: all 0.15s;
+  }
+
+  .btn-ghost:hover { border-color: var(--border-hover); color: var(--text); }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid rgba(255,68,85,0.3);
+    border-radius: 6px;
+    color: var(--danger);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 6px 12px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: all 0.15s;
+  }
+
+  .btn-danger:hover { background: rgba(255,68,85,0.08); }
+
+  .btn-accent {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #080808;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 6px 12px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: opacity 0.15s;
+  }
+
+  .btn-accent:hover { opacity: 0.85; }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: flex;
+    flex: 1;
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    width: 190px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    background: rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+
+  .ep-fields {
+    padding: 0 14px 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field-label {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    margin-bottom: 3px;
+  }
+
+  .ep-fields input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 7px 9px;
+    width: 100%;
+    outline: none;
+    letter-spacing: 0.05em;
+    transition: border-color 0.15s;
+  }
+
+  .ep-fields input:focus { border-color: rgba(200,245,66,0.4); }
+
+  nav button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-left: 2px solid transparent;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 10px 14px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  nav button:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+
+  nav button.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .nav-icon { opacity: 0.5; font-size: 11px; }
+  nav button.active .nav-icon { opacity: 1; }
+
+  .nav-dot {
+    margin-left: auto;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .progress-section {
+    margin-top: auto;
+    padding: 16px 14px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .progress-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .progress-bar {
+    display: flex; gap: 3px; margin-bottom: 6px;
+  }
+
+  .progress-seg {
+    flex: 1; height: 3px; border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    transition: background 0.3s;
+  }
+
+  .progress-seg.done { background: var(--accent); }
+
+  .progress-count {
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  /* ── MAIN CONTENT ── */
+  main {
+    flex: 1;
+    padding: 32px 32px 60px;
+    overflow-y: auto;
+    max-height: calc(100vh - 56px);
+  }
+
+  .section-header {
+    margin-bottom: 28px;
+  }
+
+  .section-header h2 {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-bottom: 5px;
+  }
+
+  .section-header p {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── CARDS GRID ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .env-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--border-hover); }
+
+  /* ── DROP ZONE ── */
+  .drop-zone {
+    border: 1.5px dashed rgba(255,255,255,0.1);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.015);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .drop-zone:hover, .drop-zone.dragging {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .drop-zone.filled {
+    border-style: solid;
+    border-color: rgba(200,245,66,0.25);
+    background: rgba(200,245,66,0.03);
+  }
+
+  .drop-zone-sq { aspect-ratio: 1/1; }
+  .drop-zone-vid { aspect-ratio: 16/9; }
+
+  .drop-zone-inner {
+    text-align: center;
+    padding: 12px;
+    pointer-events: none;
+  }
+
+  .drop-icon {
+    font-size: 16px;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .drop-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  .drop-zone img,
+  .drop-zone video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    position: absolute; inset: 0;
+  }
+
+  .drop-overlay {
+    position: absolute; inset: 0;
+    background: transparent;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .drop-zone:hover .drop-overlay { opacity: 1; }
+
+  .remove-btn {
+    background: rgba(0,0,0,0.8);
+    border: none;
+    color: var(--danger);
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+  }
+
+  .caption-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.75));
+    padding: 14px 8px 6px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.06em;
+    pointer-events: none;
+  }
+
+  /* ── TEXT INPUTS ── */
+  input[type=text], textarea {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 10px;
+    width: 100%;
+    outline: none;
+    letter-spacing: 0.04em;
+    transition: border-color 0.15s;
+    line-height: 1.6;
+  }
+
+  input[type=text]:focus, textarea:focus {
+    border-color: rgba(200,245,66,0.35);
+  }
+
+  textarea { resize: vertical; }
+
+  .input-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  /* ── CHARACTER CARD ── */
+  .char-top {
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+
+  .char-sheet { width: 82px; flex-shrink: 0; }
+
+  .char-fields {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .char-env-shots {
+    display: flex; gap: 6px;
+  }
+
+  .char-env-shots .drop-zone { flex: 1; }
+
+  /* ── ADD CARD BUTTON ── */
+  .add-card {
+    border: 1.5px dashed rgba(255,255,255,0.08);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .add-card:hover {
+    border-color: rgba(200,245,66,0.3);
+    color: rgba(200,245,66,0.6);
+    background: var(--accent-dim);
+  }
+
+  /* ── IMAGE GRID ── */
+  .img-drop-area {
+    border: 1.5px dashed rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    margin-bottom: 20px;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.01);
+  }
+
+  .img-drop-area:hover, .img-drop-area.dragging {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .img-thumb {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1/1;
+  }
+
+  .img-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .img-num {
+    position: absolute;
+    top: 6px; left: 6px;
+    background: rgba(0,0,0,0.75);
+    color: var(--accent);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+
+  .img-remove {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: rgba(0,0,0,0.75);
+    border: none;
+    color: var(--danger);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .img-thumb:hover .img-remove { opacity: 1; }
+
+  /* ── VIDEO GRID ── */
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  .clip-slot { display: flex; flex-direction: column; gap: 6px; }
+
+  .clip-num {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+  }
+
+  .open-clip {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 5px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    width: 100%;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .open-clip:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── STORYLINE ── */
+  .story-block { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+
+  /* ── CONFIRM CLEAR ── */
+  .confirm-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .confirm-text {
+    font-size: 10px;
+    color: rgba(255,68,85,0.8);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-panel { animation: fadeIn 0.2s ease; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    aside { width: 160px; }
+    main { padding: 20px 16px 40px; }
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="gate">
+  <div class="gate-logo">KATACHI</div>
+  <div class="gate-sub">PRODUCTION ENGINE</div>
+  <div class="gate-box">
+    <input type="password" id="pwd-input" placeholder="enter password" onkeydown="if(event.key==='Enter')checkPwd()">
+    <button onclick="checkPwd()">ENTER</button>
+    <div class="gate-error" id="pwd-error"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header>
+    <div class="header-left">
+      <span class="logo">KATACHI</span>
+      <div class="divider"></div>
+      <span class="header-tag">PRODUCTION ENGINE</span>
+      <span class="ep-badge" id="ep-badge" style="display:none"></span>
+    </div>
+    <div class="header-right" id="header-right">
+      <button class="btn-ghost" onclick="confirmClear()">↺ clear engine</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <div class="ep-fields">
+        <div>
+          <div class="field-label">EPISODE NO.</div>
+          <input type="text" id="ep-num" placeholder="e.g. 01" oninput="updateBadge()">
+        </div>
+        <div>
+          <div class="field-label">EPISODE TITLE</div>
+          <input type="text" id="ep-title" placeholder="Episode title" oninput="updateBadge()">
+        </div>
+      </div>
+
+      <nav id="nav">
+        <button class="active" onclick="showSection('characters',this)">
+          <span class="nav-icon">◈</span> Characters
+          <span class="nav-dot" id="dot-characters" style="display:none"></span>
+        </button>
+        <button onclick="showSection('environments',this)">
+          <span class="nav-icon">◉</span> Environments
+          <span class="nav-dot" id="dot-environments" style="display:none"></span>
+        </button>
+        <button onclick="showSection('storyline',this)">
+          <span class="nav-icon">◎</span> Storyline
+          <span class="nav-dot" id="dot-storyline" style="display:none"></span>
+        </button>
+        <button onclick="showSection('images',this)">
+          <span class="nav-icon">◫</span> Scene Images
+          <span class="nav-dot" id="dot-images" style="display:none"></span>
+        </button>
+        <button onclick="showSection('storyboard',this)">
+          <span class="nav-icon">▦</span> Storyboard
+          <span class="nav-dot" id="dot-storyboard" style="display:none"></span>
+        </button>
+        <button onclick="showSection('videos',this)">
+          <span class="nav-icon">▶</span> Video Sequence
+          <span class="nav-dot" id="dot-videos" style="display:none"></span>
+        </button>
+      </nav>
+
+      <div class="progress-section">
+        <div class="progress-label">EPISODE PROGRESS</div>
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-seg" id="prog-0"></div>
+          <div class="progress-seg" id="prog-1"></div>
+          <div class="progress-seg" id="prog-2"></div>
+          <div class="progress-seg" id="prog-3"></div>
+          <div class="progress-seg" id="prog-4"></div>
+          <div class="progress-seg" id="prog-5"></div>
+        </div>
+        <div class="progress-count" id="progress-count">0 / 6 sections</div>
+      </div>
+    </aside>
+
+    <main id="main-content">
+
+      <!-- CHARACTERS -->
+      <div id="section-characters" class="section-panel">
+        <div class="section-header">
+          <h2>Characters</h2>
+          <p>Character sheets + environment appearances for this episode</p>
+        </div>
+        <div class="cards-grid" id="char-grid">
+          <button class="add-card" onclick="addCharacter()">+ add character</button>
+        </div>
+      </div>
+
+      <!-- ENVIRONMENTS -->
+      <div id="section-environments" class="section-panel" style="display:none">
+        <div class="section-header">
+          <h2>Environments</h2>
+          <p>Locations featured in this episode</p>
+        </div>
+        <div class="cards-grid env-grid" id="env-grid">
+          <button class="add-card" onclick="addEnvironment()">+ add environment</button>
+        </div>
+      </div>
+
+      <!-- STORYLINE -->
+      <div id="section-storyline" class="section-panel" style="display:none">
+        <div class="section-header">
+          <h2>Storyline</h2>
+          <p>Episode brief, arc notes, scene-by-scene breakdown</p>
+        </div>
+        <div class="story-block">
+          <div class="input-label">SYNOPSIS</div>
+          <textarea id="synopsis" rows="4" placeholder="One paragraph overview of this episode..." oninput="updateProgress()"></textarea>
+        </div>
+        <div class="story-block">
+          <div class="input-label">FULL STORYLINE / SCENE BREAKDOWN</div>
+          <textarea id="storyline" rows="18" placeholder="Scene 1 — Opening&#10;...&#10;&#10;Scene 2 — ...&#10;&#10;Scene 3 — ...&#10;&#10;Scene 4 — Closing" oninput="updateProgress()"></textarea>
+        </div>
+      </div>
+
+      <!-- SCENE IMAGES -->
+      <div id="section-images" class="section-panel" style="display:none">
+        <div class="section-header">
+          <h2>Scene Images</h2>
+          <p>All generated images for this episode's scenes</p>
+        </div>
+        <div class="img-drop-area" id="img-drop"
+          ondragover="dragOver(event,'img-drop')"
+          ondragleave="dragLeave('img-drop')"
+          ondrop="dropImages(event,'scene-images')"
+          onclick="document.getElementById('img-file').click()">
+          Drop scene images here or click to browse — multiple files supported
+        </div>
+        <input type="file" id="img-file" accept="image/*" multiple style="display:none" onchange="fileImages(this,'scene-images')">
+        <div class="image-grid" id="scene-images-grid"></div>
+      </div>
+
+      <!-- STORYBOARD -->
+      <div id="section-storyboard" class="section-panel" style="display:none">
+        <div class="section-header">
+          <h2>Storyboard</h2>
+          <p>Visual sequence — panels appear in order</p>
+        </div>
+        <div class="img-drop-area" id="sb-drop"
+          ondragover="dragOver(event,'sb-drop')"
+          ondragleave="dragLeave('sb-drop')"
+          ondrop="dropImages(event,'storyboard')"
+          onclick="document.getElementById('sb-file').click()">
+          Drop storyboard panels here — they'll appear numbered in sequence
+        </div>
+        <input type="file" id="sb-file" accept="image/*" multiple style="display:none" onchange="fileImages(this,'storyboard')">
+        <div class="image-grid" id="storyboard-grid"></div>
+      </div>
+
+      <!-- VIDEO SEQUENCE -->
+      <div id="section-videos" class="section-panel" style="display:none">
+        <div class="section-header">
+          <h2>Video Sequence</h2>
+          <p>Place your clips in order — open in your editor when ready</p>
+        </div>
+        <div class="video-grid" id="video-grid"></div>
+        <button class="btn-ghost" style="margin-top:18px;font-size:10px" onclick="addClipSlot()">+ add clip slot</button>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// PASSWORD
+// ─────────────────────────────────────────
+const PASSWORD = 'katachi2026';
+
+function checkPwd() {
+  const val = document.getElementById('pwd-input').value;
+  if (val === PASSWORD) {
+    document.getElementById('gate').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    initVideoGrid();
+  } else {
+    const err = document.getElementById('pwd-error');
+    err.textContent = 'incorrect password';
+    setTimeout(() => err.textContent = '', 2000);
+    document.getElementById('pwd-input').value = '';
+  }
+}
+
+// ─────────────────────────────────────────
+// NAV
+// ─────────────────────────────────────────
+const SECTIONS = ['characters','environments','storyline','images','storyboard','videos'];
+
+function showSection(name, btn) {
+  SECTIONS.forEach(s => {
+    document.getElementById('section-' + s).style.display = s === name ? '' : 'none';
+  });
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ─────────────────────────────────────────
+// EPISODE BADGE
+// ─────────────────────────────────────────
+function updateBadge() {
+  const num = document.getElementById('ep-num').value.trim();
+  const title = document.getElementById('ep-title').value.trim();
+  const badge = document.getElementById('ep-badge');
+  if (num || title) {
+    badge.style.display = '';
+    badge.textContent = (num ? 'EP ' + num : '') + (num && title ? ' — ' : '') + title;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ─────────────────────────────────────────
+// PROGRESS
+// ─────────────────────────────────────────
+function updateProgress() {
+  const checks = [
+    document.querySelectorAll('#char-grid .card').length > 0,
+    document.querySelectorAll('#env-grid .card').length > 0,
+    (document.getElementById('storyline').value || '').trim().length > 10,
+    document.querySelectorAll('#scene-images-grid .img-thumb').length > 0,
+    document.querySelectorAll('#storyboard-grid .img-thumb').length > 0,
+    document.querySelectorAll('#video-grid .clip-slot').length > 0 &&
+      document.querySelectorAll('#video-grid video').length > 0,
+  ];
+
+  checks.forEach((done, i) => {
+    const seg = document.getElementById('prog-' + i);
+    const dot = document.getElementById('dot-' + SECTIONS[i]);
+    if (seg) seg.classList.toggle('done', done);
+    if (dot) dot.style.display = done ? '' : 'none';
+  });
+
+  const count = checks.filter(Boolean).length;
+  document.getElementById('progress-count').textContent = count + ' / 6 sections';
+}
+
+// ─────────────────────────────────────────
+// CLEAR ENGINE
+// ─────────────────────────────────────────
+let clearPending = false;
+
+function confirmClear() {
+  if (!clearPending) {
+    clearPending = true;
+    const hr = document.getElementById('header-right');
+    hr.innerHTML = `
+      <span class="confirm-text">clear all data?</span>
+      <button class="btn-danger" onclick="doClear()">yes, clear</button>
+      <button class="btn-ghost" onclick="cancelClear()">cancel</button>
+    `;
+  }
+}
+
+function cancelClear() {
+  clearPending = false;
+  document.getElementById('header-right').innerHTML =
+    `<button class="btn-ghost" onclick="confirmClear()">↺ clear engine</button>`;
+}
+
+function doClear() {
+  // Clear all state
+  document.getElementById('ep-num').value = '';
+  document.getElementById('ep-title').value = '';
+  document.getElementById('synopsis').value = '';
+  document.getElementById('storyline').value = '';
+  document.getElementById('ep-badge').style.display = 'none';
+
+  // Reset grids
+  document.getElementById('char-grid').innerHTML =
+    '<button class="add-card" onclick="addCharacter()">+ add character</button>';
+  document.getElementById('env-grid').innerHTML =
+    '<button class="add-card" onclick="addEnvironment()">+ add environment</button>';
+  document.getElementById('scene-images-grid').innerHTML = '';
+  document.getElementById('storyboard-grid').innerHTML = '';
+
+  // Reset videos
+  initVideoGrid();
+
+  cancelClear();
+  updateProgress();
+}
+
+// ─────────────────────────────────────────
+// DROP ZONE HELPERS
+// ─────────────────────────────────────────
+function makeDropZone({ id, type = 'image', label = '', square = true, onFile, onRemove }) {
+  const dz = document.createElement('div');
+  dz.className = 'drop-zone ' + (square ? 'drop-zone-sq' : 'drop-zone-vid');
+  dz.id = id;
+
+  const inner = document.createElement('div');
+  inner.className = 'drop-zone-inner';
+  inner.innerHTML = `<span class="drop-icon">${type === 'video' ? '▶' : '+'}</span>${label ? `<span class="drop-label">${label}</span>` : ''}`;
+  dz.appendChild(inner);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'drop-overlay';
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'remove-btn';
+  rmBtn.textContent = 'remove';
+  rmBtn.onclick = (e) => { e.stopPropagation(); clearDropZone(dz, inner); onRemove && onRemove(); };
+  overlay.appendChild(rmBtn);
+  dz.appendChild(overlay);
+
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragging'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragging'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dragging');
+    const f = e.dataTransfer.files[0];
+    if (f) fillDropZone(dz, inner, f, type, label, onFile);
+  });
+  dz.addEventListener('click', () => {
+    if (dz.classList.contains('filled')) return;
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = type === 'video' ? 'video/*' : 'image/*';
+    inp.onchange = () => { if (inp.files[0]) fillDropZone(dz, inner, inp.files[0], type, label, onFile); };
+    inp.click();
+  });
+
+  return dz;
+}
+
+function fillDropZone(dz, inner, file, type, label, onFile) {
+  const url = URL.createObjectURL(file);
+  inner.innerHTML = '';
+  dz.classList.add('filled');
+
+  if (type === 'video') {
+    const v = document.createElement('video');
+    v.src = url; v.muted = true; v.loop = true;
+    v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+    dz.insertBefore(v, dz.querySelector('.drop-overlay'));
+  } else {
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+    dz.insertBefore(img, dz.querySelector('.drop-overlay'));
+  }
+
+  if (label) {
+    const cap = document.createElement('div');
+    cap.className = 'caption-bar';
+    cap.textContent = label;
+    dz.appendChild(cap);
+  }
+
+  onFile && onFile(file, url);
+  updateProgress();
+}
+
+function clearDropZone(dz, inner, type) {
+  dz.classList.remove('filled');
+  dz.querySelectorAll('img, video, .caption-bar').forEach(el => el.remove());
+  inner.innerHTML = `<span class="drop-icon">${type === 'video' ? '▶' : '+'}</span>`;
+  updateProgress();
+}
+
+// ─────────────────────────────────────────
+// CHARACTERS
+// ─────────────────────────────────────────
+let charCount = 0;
+
+function addCharacter() {
+  charCount++;
+  const id = 'char-' + charCount;
+  const grid = document.getElementById('char-grid');
+  const addBtn = grid.querySelector('.add-card');
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = id;
+
+  // Top row: sheet + fields
+  const top = document.createElement('div');
+  top.className = 'char-top';
+
+  const sheetWrap = document.createElement('div');
+  sheetWrap.className = 'char-sheet';
+  const sheet = makeDropZone({ id: id+'-sheet', label: 'Sheet', onFile: updateProgress });
+  sheetWrap.appendChild(sheet);
+
+  const fields = document.createElement('div');
+  fields.className = 'char-fields';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.placeholder = 'Character name';
+  nameInput.oninput = updateProgress;
+
+  const notesInput = document.createElement('textarea');
+  notesInput.placeholder = 'Arc notes for this episode...';
+  notesInput.rows = 3;
+  notesInput.style.fontSize = '11px';
+  notesInput.oninput = updateProgress;
+
+  fields.appendChild(nameInput);
+  fields.appendChild(notesInput);
+  top.appendChild(sheetWrap);
+  top.appendChild(fields);
+
+  // Env shots
+  const envRow = document.createElement('div');
+  envRow.className = 'char-env-shots';
+  for (let i = 1; i <= 3; i++) {
+    const dz = makeDropZone({ id: id+'-env-'+i, label: 'Env '+i, onFile: updateProgress });
+    envRow.appendChild(dz);
+  }
+
+  // Remove button
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'btn-ghost';
+  rmBtn.style.cssText = 'font-size:9px;color:var(--danger);border-color:rgba(255,68,85,0.2);align-self:flex-end;margin-top:2px;';
+  rmBtn.textContent = 'remove character';
+  rmBtn.onclick = () => { card.remove(); updateProgress(); };
+
+  card.appendChild(top);
+  card.appendChild(envRow);
+  card.appendChild(rmBtn);
+
+  grid.insertBefore(card, addBtn);
+  updateProgress();
+}
+
+// ─────────────────────────────────────────
+// ENVIRONMENTS
+// ─────────────────────────────────────────
+let envCount = 0;
+
+function addEnvironment() {
+  envCount++;
+  const id = 'env-' + envCount;
+  const grid = document.getElementById('env-grid');
+  const addBtn = grid.querySelector('.add-card');
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = id;
+
+  const dz = makeDropZone({ id: id+'-img', label: 'Reference', onFile: updateProgress });
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.placeholder = 'Location name (e.g. The Shore)';
+  nameInput.oninput = updateProgress;
+
+  const notesInput = document.createElement('textarea');
+  notesInput.placeholder = 'Environment notes, time of day, mood...';
+  notesInput.rows = 2;
+  notesInput.oninput = updateProgress;
+
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'btn-ghost';
+  rmBtn.style.cssText = 'font-size:9px;color:var(--danger);border-color:rgba(255,68,85,0.2);align-self:flex-end;';
+  rmBtn.textContent = 'remove';
+  rmBtn.onclick = () => { card.remove(); updateProgress(); };
+
+  card.appendChild(dz);
+  card.appendChild(nameInput);
+  card.appendChild(notesInput);
+  card.appendChild(rmBtn);
+
+  grid.insertBefore(card, addBtn);
+  updateProgress();
+}
+
+// ─────────────────────────────────────────
+// IMAGE GRIDS
+// ─────────────────────────────────────────
+function dragOver(e, dzId) {
+  e.preventDefault();
+  document.getElementById(dzId).classList.add('dragging');
+}
+
+function dragLeave(dzId) {
+  document.getElementById(dzId).classList.remove('dragging');
+}
+
+function dropImages(e, gridName) {
+  e.preventDefault();
+  const dzId = gridName === 'scene-images' ? 'img-drop' : 'sb-drop';
+  document.getElementById(dzId).classList.remove('dragging');
+  addImagesToGrid(e.dataTransfer.files, gridName);
+}
+
+function fileImages(input, gridName) {
+  addImagesToGrid(input.files, gridName);
+  input.value = '';
+}
+
+function addImagesToGrid(files, gridName) {
+  const grid = document.getElementById(gridName + '-grid');
+  const numbered = gridName === 'storyboard';
+  const currentCount = grid.querySelectorAll('.img-thumb').length;
+
+  Array.from(files).forEach((file, i) => {
+    const url = URL.createObjectURL(file);
+    const num = currentCount + i + 1;
+
+    const thumb = document.createElement('div');
+    thumb.className = 'img-thumb';
+
+    const img = document.createElement('img');
+    img.src = url;
+    thumb.appendChild(img);
+
+    if (numbered) {
+      const numEl = document.createElement('div');
+      numEl.className = 'img-num';
+      numEl.textContent = String(num).padStart(2, '0');
+      thumb.appendChild(numEl);
+    }
+
+    const rm = document.createElement('button');
+    rm.className = 'img-remove';
+    rm.textContent = '×';
+    rm.onclick = () => { thumb.remove(); if (numbered) renumberGrid(grid); updateProgress(); };
+    thumb.appendChild(rm);
+
+    grid.appendChild(thumb);
+  });
+
+  updateProgress();
+}
+
+function renumberGrid(grid) {
+  grid.querySelectorAll('.img-num').forEach((el, i) => {
+    el.textContent = String(i + 1).padStart(2, '0');
+  });
+}
+
+// ─────────────────────────────────────────
+// VIDEO GRID
+// ─────────────────────────────────────────
+let clipCount = 0;
+
+function initVideoGrid() {
+  clipCount = 0;
+  document.getElementById('video-grid').innerHTML = '';
+  for (let i = 0; i < 6; i++) addClipSlot();
+}
+
+function addClipSlot() {
+  clipCount++;
+  const grid = document.getElementById('video-grid');
+  const slot = document.createElement('div');
+  slot.className = 'clip-slot';
+
+  const num = document.createElement('div');
+  num.className = 'clip-num';
+  num.textContent = 'CLIP ' + String(clipCount).padStart(2, '0');
+
+  const dz = makeDropZone({
+    id: 'clip-' + clipCount,
+    type: 'video',
+    label: 'Scene ' + clipCount,
+    square: false,
+    onFile: (file, url) => {
+      let openBtn = slot.querySelector('.open-clip');
+      if (!openBtn) {
+        openBtn = document.createElement('button');
+        openBtn.className = 'open-clip';
+        openBtn.textContent = '↗ open clip';
+        slot.appendChild(openBtn);
+      }
+      openBtn.onclick = () => window.open(url, '_blank');
+      updateProgress();
+    },
+    onRemove: () => {
+      const ob = slot.querySelector('.open-clip');
+      if (ob) ob.remove();
+      updateProgress();
+    }
+  });
+
+  slot.appendChild(num);
+  slot.appendChild(dz);
+  grid.appendChild(slot);
+}
+</script>
+</body>
+</html>
