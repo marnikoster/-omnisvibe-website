@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Collision Bible — OmniSVibe</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #f4f1ec;
+    --cream-dark: #ede9e2;
+    --ink: #1a1814;
+    --ink-mid: #3d3a35;
+    --ink-light: #7a756e;
+    --ink-faint: #b8b3ac;
+    --accent: #8B6914;
+    --accent-light: #c9a84c;
+    --green: #4a7c59;
+    --red: #8b3a3a;
+    --border: #ddd9d2;
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 48px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--cream);
+    z-index: 100;
+  }
+  .nav-logo {
+    font-family: 'Jost', sans-serif;
+    font-weight: 200;
+    font-size: 13px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .nav-sub {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--ink-light);
+    text-transform: uppercase;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 80px 48px 60px;
+    max-width: 900px;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-bottom: 24px;
+  }
+  .hero-eyebrow span { margin: 0 10px; }
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(52px, 8vw, 96px);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--ink-light);
+  }
+  .hero-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 20px;
+    color: var(--ink-light);
+    font-weight: 300;
+    margin-bottom: 8px;
+  }
+  .hero-meta {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-top: 16px;
+  }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 48px;
+  }
+
+  /* MAIN LAYOUT */
+  .main {
+    padding: 48px 48px 80px;
+    max-width: 1200px;
+  }
+
+  /* API KEY */
+  .api-section {
+    margin-bottom: 48px;
+    padding: 32px;
+    border: 1px solid var(--border);
+    background: #fff;
+    max-width: 640px;
+  }
+  .api-label {
+    font-size: 10px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-bottom: 16px;
+  }
+  .api-label.active { color: var(--green); }
+  .api-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink-mid);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .api-desc a { color: var(--accent); }
+  .api-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .api-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Jost', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-input:focus { border-color: var(--ink-mid); }
+  .api-toggle {
+    padding: 12px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--ink-light);
+    transition: all 0.2s;
+  }
+  .api-status {
+    margin-top: 10px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--green);
+    display: none;
+  }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* MODE SELECTOR */
+  .mode-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 48px;
+    max-width: 640px;
+    border: 1px solid var(--border);
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 20px 24px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .mode-btn:last-child { border-right: none; }
+  .mode-btn.active { background: var(--ink); color: #fff; }
+  .mode-btn-title {
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 400;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .mode-btn-sub {
+    font-size: 12px;
+    opacity: 0.6;
+    font-style: italic;
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .mode-btn.active .mode-btn-sub { opacity: 0.7; }
+
+  /* MANUAL SELECTOR */
+  .selector-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .cat-nav {
+    background: var(--cream-dark);
+    padding: 8px;
+  }
+  .cat-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--ink-light);
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .cat-btn.active {
+    color: var(--ink);
+    background: var(--cream);
+    border-left-color: var(--ink);
+  }
+  .cat-count {
+    font-size: 10px;
+    background: var(--ink);
+    color: var(--cream);
+    padding: 1px 6px;
+    border-radius: 20px;
+  }
+  .subcat-panel {
+    background: #fff;
+    padding: 32px;
+  }
+  .subcat-item { margin-bottom: 24px; }
+  .subcat-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lock-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0;
+    color: var(--ink-faint);
+    transition: color 0.2s;
+  }
+  .lock-btn.locked { color: var(--accent); }
+  .clear-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--ink-faint);
+    padding: 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  select {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a756e' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  select:focus { border-color: var(--ink-mid); }
+  select.selected { border-color: var(--ink); background-color: #fff; }
+
+  /* SELECTED TAGS */
+  .tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 40px;
+  }
+  .tag {
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--ink-mid);
+    background: #fff;
+  }
+  .tag-key { color: var(--ink-faint); margin-right: 4px; }
+
+  /* GENERATE */
+  .generate-area { margin-bottom: 48px; }
+  .generate-btn {
+    padding: 18px 48px;
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    font-family: 'Jost', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+  }
+  .generate-btn:hover { background: var(--ink-mid); }
+  .generate-btn:disabled { background: var(--ink-faint); cursor: not-allowed; }
+  .generate-note {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 2px;
+    font-style: italic;
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  /* LOADING */
+  .loading {
+    display: none;
+    padding: 40px 0;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink-light);
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .loading { animation: pulse 2s infinite; }
+
+  /* ERROR */
+  .error-box {
+    display: none;
+    padding: 16px 20px;
+    border: 1px solid #c9a0a0;
+    background: #fdf5f5;
+    color: var(--red);
+    font-size: 13px;
+    margin-bottom: 24px;
+    letter-spacing: 0.5px;
+  }
+
+  /* RESULT */
+  .result { display: none; border-top: 1px solid var(--border); padding-top: 48px; }
+
+  .result-rarity {
+    font-size: 10px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .result-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(40px, 6vw, 72px);
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 32px;
+    color: var(--ink);
+  }
+  .result-story {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-style: italic;
+    line-height: 1.8;
+    color: var(--ink-mid);
+    max-width: 680px;
+    margin-bottom: 40px;
+    border-left: 2px solid var(--border);
+    padding-left: 24px;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 40px;
+  }
+
+  .result-block-label {
+    font-size: 10px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .elements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .element-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--cream-dark);
+    gap: 12px;
+  }
+  .element-key { color: var(--ink-faint); flex-shrink: 0; }
+  .element-val { color: var(--ink); text-align: right; }
+
+  .prompt-box {
+    padding: 24px;
+    background: var(--ink);
+    color: #c8c4bc;
+    font-family: 'Jost', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    letter-spacing: 0.3px;
+    user-select: all;
+    cursor: text;
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    padding: 12px 24px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--ink-mid);
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .action-btn:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+  .action-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+
+  /* SAVED */
+  .saved-section { margin-top: 64px; border-top: 1px solid var(--border); padding-top: 48px; display: none; }
+  .saved-item {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .saved-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-style: italic;
+    margin-bottom: 6px;
+  }
+  .saved-story { font-size: 13px; color: var(--ink-light); line-height: 1.6; max-width: 480px; }
+  .saved-rarity { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
+
+  /* FOOTER */
+  footer {
+    margin-top: 80px;
+    padding: 32px 48px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer p { font-size: 11px; letter-spacing: 2px; color: var(--ink-faint); text-transform: uppercase; }
+
+  @media (max-width: 768px) {
+    nav, .main, footer { padding-left: 24px; padding-right: 24px; }
+    .hero { padding: 48px 24px 40px; }
+    .divider { margin: 0 24px; }
+    .selector-grid { grid-template-columns: 1fr; }
+    .result-grid { grid-template-columns: 1fr; }
+    .mode-row { flex-direction: column; border: none; gap: 1px; }
+    .mode-btn { border-right: none; border: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="https://omnisvibe.com" class="nav-logo">OmniSVibe</a>
+  <span class="nav-sub">The Collision Bible</span>
+</nav>
+
+<div class="hero">
+  <p class="hero-eyebrow">Human <span>·</span> AI <span>·</span> Collision <span>·</span> OmniSVibe.com</p>
+  <h1 class="hero-title">The Collision<br><em>Bible.</em></h1>
+  <p class="hero-sub">Where cultures, eras, and aesthetics collide to create the never-before-seen.</p>
+  <p class="hero-meta" id="meta-count">Loading elements...</p>
+</div>
+
+<hr class="divider">
+
+<div class="main">
+
+  <!-- API KEY -->
+  <div class="api-section">
+    <p class="api-label" id="api-label">🔑 Anthropic API Key</p>
+    <p class="api-desc" id="api-desc">
+      This tool uses Claude to write your character. Get a free key at
+      <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+      → API Keys → Create Key. Paste it below.
+    </p>
+    <div class="api-input-row">
+      <input type="password" class="api-input" id="api-key-input"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        placeholder="">
+      <button class="api-toggle" id="toggle-vis" onclick="toggleVis()">👁</button>
+    </div>
+    <p class="api-status" id="api-status">✓ Key active</p>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-box" id="error-box"></div>
+
+  <!-- MODE -->
+  <p class="section-label">Choose your mode</p>
+  <div class="mode-row">
+    <button class="mode-btn" id="btn-manual" onclick="setMode('manual')">
+      <span class="mode-btn-title">Manual Pick</span>
+      <span class="mode-btn-sub">Choose exactly what you want</span>
+    </button>
+    <button class="mode-btn" id="btn-random" onclick="setMode('random')">
+      <span class="mode-btn-title">Random Chaos</span>
+      <span class="mode-btn-sub">Spin every dial at once</span>
+    </button>
+    <button class="mode-btn" id="btn-saved" onclick="toggleSaved()">
+      <span class="mode-btn-title">Saved (<span id="saved-count">0</span>)</span>
+      <span class="mode-btn-sub">Your collection</span>
+    </button>
+  </div>
+
+  <!-- MANUAL SELECTOR -->
+  <div id="manual-panel" style="display:none; margin-bottom:48px;">
+    <p class="section-label">Select your elements</p>
+    <div class="selector-grid">
+      <div class="cat-nav" id="cat-nav"></div>
+      <div class="subcat-panel" id="subcat-panel"></div>
+    </div>
+
+    <!-- TAGS -->
+    <div id="tags-row" class="tags-row" style="display:none"></div>
+  </div>
+
+  <!-- GENERATE -->
+  <div class="generate-area">
+    <button class="generate-btn" id="gen-btn" onclick="generate()">Generate Character</button>
+    <p class="generate-note" id="gen-note"></p>
+  </div>
+
+  <div class="loading" id="loading">Claude is colliding your elements...</div>
+
+  <!-- RESULT -->
+  <div class="result" id="result">
+    <p class="result-rarity" id="r-rarity"></p>
+    <h2 class="result-name" id="r-name"></h2>
+    <p class="result-story" id="r-story"></p>
+    <div class="result-grid">
+      <div>
+        <p class="result-block-label">Collision Elements</p>
+        <div class="elements-list" id="r-elements"></div>
+      </div>
+      <div>
+        <p class="result-block-label">AI Image Prompt — select all & paste into any generator</p>
+        <div class="prompt-box" id="r-prompt"></div>
+        <div class="result-actions">
+          <button class="action-btn" id="copy-btn" onclick="copyPrompt()">Copy Prompt</button>
+          <button class="action-btn" onclick="saveChar()">Save Character</button>
+          <button class="action-btn" onclick="generate()">Generate Again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVED -->
+  <div class="saved-section" id="saved-section">
+    <p class="section-label">Saved Characters</p>
+    <div id="saved-list"></div>
+  </div>
+
+</div>
+
+<footer>
+  <p>OmniSVibe — The Collision Bible</p>
+  <p id="footer-count"></p>
+</footer>
+
+<script>
+// ============================================================
+// ALL LISTS
+// ============================================================
+const CATEGORIES = {
+  "Heritage & Origin": {
+    icon: "🌍",
+    "Ethnicity / Cultural Background": ["West African","East African","North African","Southern African","Nigerian","Ghanaian","Ethiopian","Senegalese","Zulu","Maasai","Yoruba","Igbo","Japanese","Chinese","Korean","Vietnamese","Thai","Filipino","Indonesian","Indian (North)","Indian (South)","Pakistani","Tibetan","Mongolian","Arab (Levantine)","Arab (Gulf)","Persian/Iranian","Turkish","Kurdish","English","French","Italian","Spanish","Portuguese","German","Scandinavian","Russian","Polish","Greek","Mexican","Colombian","Brazilian","Peruvian","Argentinian","Cuban","Jamaican","Haitian","Native American (Plains)","Native American (Pacific Northwest)","Inuit","Māori","Aboriginal Australian","Polynesian","Melanesian","Afro-Caribbean","Afro-Latino","Mixed Heritage"],
+    "Age Archetype": ["Child (3–7)","Child (8–12)","Teenager","Young Adult (18–25)","Adult (26–35)","Adult (36–45)","Middle Age (46–55)","Mature (56–65)","Elder (66–75)","Ancient Elder (76+)"],
+    "Character Archetype": ["The Warrior","The Mystic","The Sage","The Trickster","The Rebel","The Merchant","The Healer","The Scholar","The Artist","The Explorer","The Outcast","The Ruler","The Lover","The Innocent","The Creator","The Destroyer","The Prophet","The Shapeshifter","The Guardian","The Wanderer","The Hermit"]
+  },
+  "Fashion & Dress": {
+    icon: "👗",
+    "Fashion Era / Style": ["Renaissance (1500s)","Elizabethan (1558–1603)","Baroque (1600s)","Rococo (1700s)","Regency (1800–1820)","Victorian (1837–1901)","Edwardian (1900–1910)","1920s Art Deco / Flapper","1930s Hollywood Glamour","1940s Wartime Utility","1950s New Look / Rockabilly","1960s Mod / Space Age","1970s Bohemian / Disco","1980s Power Dressing / New Wave","1990s Grunge / Minimalism","2000s Y2K / Logomania","2010s Normcore / Athleisure","2020s Quiet Luxury","Haute Couture (Paris)","Savile Row Bespoke","Japanese Avant-Garde","Afrocentric Fashion","Indigenous Regalia","South Asian Bridal","Chinese Hanfu","Korean Hanbok","Arab Thobe / Abaya","West African Kente Dress","Indian Sari","Kimono (Traditional)","Kimono (Contemporary)","Punk","Goth","Cyberpunk","Steampunk","Cottagecore","Dark Academia","Vaporwave Aesthetic","Hypebeast / Streetwear","Rave / Festival","Lolita (Gothic)","Visual Kei","Harajuku Decora","Techwear","Balletcore","Westernwear / Cowboy"],
+    "Subculture / Style Tribe": ["Punk","Goth","Mod","Teddy Boy","Hippie","New Wave","Emo","Indie","Hypebeast","Sneakerhead","Skater","Surfer","Biker/Moto","Preppy","Old Money","Drag / Ballroom","Leather Aesthetic","Nu-Goth","Pastel Goth","Cottagecore","Forestpunk","Solarpunk","Dieselpunk","Cassette Futurism"]
+  },
+  "Textiles & Materials": {
+    icon: "🧵",
+    "Fabric / Textile": ["Raw Silk","Dupioni Silk","Charmeuse Silk","Chiffon","Organza","Taffeta","Velvet","Brocade","Jacquard","Damask","Egyptian Cotton","Muslin","Denim","Linen","Hemp","Bamboo Fabric","Merino Wool","Cashmere","Alpaca","Angora","Mohair","Tweed","Boiled Wool","Neoprene","Latex","Leather (Full-Grain)","Suede","Gore-Tex","Mesh","Lace","Crochet","Kente Cloth","Mud Cloth (Bogolan)","Ankara Wax Print","Adire (Tie-Dye)","Ikat","Batik","Shibori","Bandhani","Block-Printed Cotton","Kimono Silk","Peruvian Alpaca Weave","Andean Aguayo","Navajo Wool Weave","Tartan / Plaid","Harris Tweed","Irish Linen","Belgian Lace","French Toile de Jouy"],
+    "Artistic Textile Technique": ["Hand Weaving","Tapestry Weaving","Macrame","Knitting","Crocheting","Embroidery","Applique","Quilting","Patchwork","Batik","Shibori","Tie-Dye","Screen Printing","Block Printing","Lace Making","Felting","Beading","Zardozi (Indian Metal Embroidery)"]
+  },
+  "Color": {
+    icon: "🎨",
+    "Color Family": ["Crimson","Scarlet","Ruby","Burgundy","Maroon","Oxblood","Coral","Salmon","Tangerine","Burnt Orange","Amber","Ochre","Terracotta","Rust","Sienna","Copper","Canary Yellow","Gold","Saffron","Mustard","Chartreuse","Cream","Ivory","Champagne","Emerald","Forest Green","Sage","Olive","Moss","Mint","Celadon","Jade","Viridian","Teal","Cobalt","Royal Blue","Navy","Indigo","Cerulean","Sky Blue","Powder Blue","Periwinkle","Sapphire","Electric Blue","Aquamarine","Turquoise","Violet","Lavender","Lilac","Mauve","Plum","Amethyst","Magenta","Fuchsia","Jet Black","Charcoal","Graphite","Silver","Platinum","Pearl","White","Off-White","Beige","Sand","Taupe","Camel","Gold (Metallic)","Rose Gold","Bronze (Metallic)","Gunmetal","Lapis Lazuli","Malachite Green"]
+  },
+  "Art & Style": {
+    icon: "🖼️",
+    "Art Movement / Ism": ["Egyptian Art","Greek Classical","Roman Art","Byzantine Art","Islamic Geometric Art","Gothic (Medieval)","Illuminated Manuscript","Celtic Art","Early Renaissance","High Renaissance","Mannerism","Baroque","Dutch Golden Age","Rococo","Neoclassicism","Romanticism","Realism","Pre-Raphaelitism","Impressionism","Post-Impressionism","Pointillism","Symbolism","Art Nouveau","Fauvism","Expressionism","Cubism","Futurism","Constructivism","Suprematism","De Stijl","Dadaism","Surrealism","Bauhaus","Art Deco","Social Realism","Mexican Muralism","Abstract Expressionism","Pop Art","Minimalism","Conceptual Art","Land Art","Photorealism","Neo-Expressionism","Street Art","Lowbrow / Pop Surrealism","Hyperrealism","Afrofuturism","Generative Art","AI Art","Glitch Art","Vaporwave Art","Solarpunk Art"],
+    "Artistic Technique": ["Oil Painting","Watercolor","Gouache","Acrylic Painting","Tempera","Fresco","Encaustic","Ink Drawing","Charcoal Drawing","Pastel","Etching","Engraving","Woodblock Print","Linocut","Screen Print","Lithography","Risograph","Collage","Photomontage","Mixed Media","Assemblage","Mosaic","Stained Glass","Ceramics / Pottery","Glassblowing","Bronze Casting","Stone Carving","Wood Carving","Photography (Film)","Photography (Digital)","Cyanotype","Daguerreotype","Digital Illustration","3D Rendering","Pixel Art","Vector Art","Generative/Algorithmic"]
+  },
+  "Cultural Traditions": {
+    icon: "🏛️",
+    "Japanese Art Form": ["Ukiyo-e (Woodblock Print)","Sumi-e (Ink Wash Painting)","Kintsugi (Gold Repair)","Ikebana (Flower Arranging)","Wabi-Sabi","Manga Style","Anime Style","Noh Mask Art","Kabuki Makeup","Mon (Family Crest Design)","Origami","Raku Ceramics","Shodo (Calligraphy)"],
+    "African Art Form": ["Kente Weaving (Ghana)","Adinkra Symbols (Ghana)","Ndebele Geometric Painting","Dogon Mask Art (Mali)","Maasai Beadwork","Bogolan / Mud Cloth (Mali)","Yoruba Bronze Casting","Benin Bronze","Ethiopian Icon Painting","Tinga Tinga Painting"],
+    "Indian Art Form": ["Madhubani Painting","Warli Art","Tanjore Painting","Miniature Painting (Mughal)","Rangoli","Block Printing","Kalamkari","Mandala Art"],
+    "Indigenous Art Form": ["Totem Pole Carving","Dreamtime Painting (Aboriginal)","Sand Painting (Navajo)","Inuit Soapstone Carving","Haida Art","Maori Ta Moko","Pacific Tapa Cloth","Huichol Yarn Art","Aztec Mosaic","Mayan Glyph Art"],
+    "Middle Eastern Art Form": ["Persian Miniature Painting","Arabesque Geometric Art","Islamic Tilework (Zellige)","Arabic Calligraphy","Persian Carpet Design","Ebru (Turkish Marbling)","Henna / Mehndi Art"],
+    "European Folk Art": ["Celtic Knotwork","Norse Rune Art","Viking Wood Carving","Illuminated Manuscript","Russian Palekh Lacquer","Ukrainian Pysanky","Scandinavian Rosemaling","Portuguese Azulejo Tile"]
+  },
+  "Music": {
+    icon: "🎵",
+    "Music Genre / Subgenre": ["Jazz - Dixieland","Jazz - Swing","Jazz - Bebop","Jazz - Cool Jazz","Jazz - Hard Bop","Jazz - Modal Jazz","Jazz - Free Jazz","Jazz - Fusion","Jazz - Acid Jazz","Jazz - Nu Jazz","Classical - Baroque","Classical - Classical Period","Classical - Romantic","Classical - Impressionist","Classical - Minimalist","Blues - Delta Blues","Blues - Chicago Blues","Blues - Electric Blues","Rock - Classic Rock","Rock - Psychedelic Rock","Rock - Progressive Rock","Rock - Punk Rock","Rock - Post-Punk","Rock - New Wave","Rock - Alternative","Rock - Indie Rock","Rock - Grunge","Rock - Shoegaze","Rock - Math Rock","Rock - Post-Rock","Rock - Emo","Metal - Heavy Metal","Metal - Thrash Metal","Metal - Death Metal","Metal - Black Metal","Metal - Doom Metal","Metal - Symphonic Metal","Pop - Synthpop","Pop - Dream Pop","Pop - Indie Pop","Pop - Art Pop","Pop - Hyperpop","Pop - K-Pop","Pop - J-Pop","Pop - Afropop","Pop - Latin Pop","Electronic - House","Electronic - Deep House","Electronic - Techno","Electronic - Trance","Electronic - Drum & Bass","Electronic - Dubstep","Electronic - Ambient","Electronic - IDM","Electronic - Vaporwave","Electronic - Lo-Fi Hip Hop","Electronic - Synthwave","Electronic - Darkwave","Hip Hop - Old School","Hip Hop - Golden Age","Hip Hop - Conscious Rap","Hip Hop - Trap","Hip Hop - Drill","Hip Hop - Jazz Rap","Soul - Classic Soul","Soul - Neo-Soul","R&B - Contemporary","Funk - Classic","Funk - Afrobeat","Gospel","Motown","Folk - American","Folk - Celtic","Folk - Nordic","Country - Classic","Bluegrass","World - Reggae","World - Afrobeats","World - Bossa Nova","World - Samba","World - Cumbia","World - Salsa","World - Flamenco","World - Fado","World - Qawwali","World - Hindustani Classical","World - Gamelan","World - Gnawa","World - Arabic Maqam"]
+  },
+  "Photography & Film": {
+    icon: "📷",
+    "Photography Style": ["Portrait - Studio","Portrait - Environmental","Portrait - High Fashion","Portrait - Documentary","Street Photography","Fine Art Photography","Landscape","Architectural Photography","Aerial / Drone","Macro / Close-Up","Astrophotography","Long Exposure","Double Exposure","Black & White Film","Color Film (35mm)","Polaroid / Instant","Cyanotype","Daguerreotype","Wet Plate Collodion","Pinhole Camera","Conceptual / Surreal Photography","Fashion Editorial","Abstract Photography"],
+    "Lighting Style": ["Natural - Golden Hour","Natural - Blue Hour","Natural - Overcast","Natural - Window Light","Natural - Dappled","Studio - High Key","Studio - Low Key","Studio - Rembrandt","Studio - Split Lighting","Studio - Butterfly","Studio - Rim / Hair Light","Studio - Silhouette","Chiaroscuro (Dramatic Shadow)","Tenebrism","Neon / Colored Gel","Practical Lighting","Candlelight / Firelight","Bioluminescent","Cinematic - Film Noir","Cinematic - Horror","Cinematic - Sci-Fi (Cold Blue)","Cinematic - Magic Hour"],
+    "Camera Angle": ["Eye Level","Low Angle (Worm's Eye)","High Angle (Bird's Eye)","Overhead / Top-Down","Dutch Angle / Canted","Over-the-Shoulder","Point of View (POV)","Extreme Close-Up","Close-Up","Medium Shot","Wide Shot","Extreme Wide / Establishing","Full Body Shot","Profile / Side View","Three-Quarter View","Rear / Back View","Drone / Aerial Perspective"],
+    "Animation Style": ["Traditional 2D (Hand-Drawn)","Rubber Hose (1920s-30s)","Disney Golden Age","Anime (Ghibli Style)","Anime (Shonen Action)","Anime (Shojo)","3D CGI (Pixar Style)","3D CGI (Realistic)","3D CGI (Stylized)","Stop Motion (Claymation)","Stop Motion (Puppetry)","Cut-Out Animation","Silhouette Animation","Rotoscope","Motion Capture","Motion Graphics","Experimental / Abstract"],
+    "Film Genre / Movement": ["German Expressionism","French New Wave","Italian Neorealism","American New Hollywood","Film Noir","Neo-Noir","Horror - Gothic","Horror - Body Horror","Horror - Folk Horror","Horror - Elevated Horror","Sci-Fi - Hard Sci-Fi","Sci-Fi - Space Opera","Sci-Fi - Cyberpunk","Fantasy - High Fantasy","Fantasy - Dark Fantasy","Martial Arts / Wuxia","Psychological Thriller","Surrealist Film","Road Movie","Coming-of-Age"]
+  },
+  "Architecture & Design": {
+    icon: "🏗️",
+    "Architecture Style": ["Egyptian Architecture","Greek Classical","Roman Architecture","Byzantine","Islamic Architecture","Gothic Cathedral","Romanesque","Moorish","Mughal Architecture","Chinese Imperial","Japanese Shrine","Italian Renaissance","Baroque Architecture","Neoclassical","Victorian Gothic","Beaux-Arts","Art Nouveau","Bauhaus","International Style","Art Deco","Brutalism","Metabolism (Japanese)","High-Tech / Pompidou Style","Deconstructivism","Parametric Architecture","Biophilic Design","Minimalist Architecture","Neofuturism","Adaptive Reuse"],
+    "Interior Design Style": ["Minimalism","Maximalism","Japandi","Wabi-Sabi","Hygge (Scandinavian Cozy)","Mid-Century Modern","Art Deco Interior","Bauhaus Interior","Hollywood Regency","Bohemian / Eclectic","Industrial","Rustic / Farmhouse","Cottagecore","Dark Academia","Coastal / Hamptons","Mediterranean","Moroccan","Tropical","Zen / Japanese","Biophilic","Futuristic / Space Age","Cyberpunk Interior","Baroque Interior","Chinoiserie"],
+    "Industrial Design Style": ["Bauhaus","Streamline Moderne","Scandinavian Functionalism","Mid-Century Modern (Eames era)","Space Age Design (1960s)","Memphis Milano","High-Tech / Machine Aesthetic","Organic Design","Biomorphic Design","Sustainable / Eco Design","Luxury / Artisan Craft","Minimalist Product Design","Generative Design"],
+    "Graphic Design Style": ["Swiss International Style","Bauhaus Graphic","Art Nouveau Poster","Art Deco Graphic","Constructivist / Soviet Propaganda","Psychedelic (1960s)","Punk Zine / DIY","New Wave Graphic (1980s)","Retro / Vintage Revival","Flat Design","Brutalist Web Design","Neubrutalism","Glitch Aesthetic","Vaporwave Graphic","Y2K Graphic","Maximalist Graphic","Minimalist Graphic","Editorial / Magazine","3D Typography","Hand-Lettered"]
+  },
+  "Tattoo & Body Art": {
+    icon: "✒️",
+    "Tattoo Style": ["Traditional American (Old School)","Neo-Traditional","New School","Japanese (Irezumi)","Tebori (Hand-Poked)","Tribal - Polynesian","Tribal - Maori","Tribal - Filipino","Tribal - Hawaiian","Tribal - Native American","Blackwork","Black & Grey Realism","Color Realism","Portraiture","Watercolor","Dotwork / Pointillism","Geometric","Sacred Geometry","Mandala","Biomechanical","Trash Polka","Fine Line","Micro-Realism","Lettering / Script","Chicano","Surrealist Tattoo","Floral / Botanical","Gothic / Dark Art","Anime / Manga Style"]
+  },
+  "Dance & Movement": {
+    icon: "💃",
+    "Dance Style": ["Ballet - Classical","Ballet - Contemporary","Contemporary Dance","Modern Dance","Jazz Dance","Tap Dance","Flamenco","Tango (Argentine)","Waltz","Salsa","Bachata","Cumbia","Samba","Breakdancing / B-Boying","Popping & Locking","Waacking","Voguing / Ballroom Culture","Krump","House Dance","Capoeira","Kathak (India)","Bharatanatyam (India)","Hula (Hawaii)","Saman (Indonesia)","Legong (Bali)","Lion Dance (China)","Highland Dancing (Scotland)","Sufi Whirling"]
+  },
+  "Setting & World": {
+    icon: "🌆",
+    "Environmental Setting": ["Tokyo Neon Cityscape","Paris Haussmann Boulevard","New York Rooftop","London Victorian Street","Lagos Market","Mumbai Train Station","Sao Paulo Favela","Havana Colonial Street","Dubai Futuristic Tower","Shanghai Skyline","Detroit Abandoned Factory","Sahara Desert Dunes","Amazon Rainforest","Arctic Ice Plain","Scottish Highland Moor","Japanese Bamboo Forest","Patagonia Mountain Lake","Namib Desert Red Sand","Mongolian Steppe","Himalayan Monastery","Bioluminescent Bay","Baroque Palace Interior","Brutalist Concrete Room","Minimalist Japanese Interior","Dark Academia Library","Grand Market Souk","Underground Rave Venue","Vintage Parisian Cafe","Futuristic White Lab","Neon-Lit Night Club","Afrofuturist Space Station","Ancient Ruins Overgrown","Floating City in Clouds","Underwater Palace","Crystal Cave","Dystopian Wasteland","Solarpunk Community Garden","Cyberpunk Street Market","Mythological Temple"]
+  },
+  "Furniture & Objects": {
+    icon: "🪑",
+    "Furniture Style": ["Ancient Egyptian","Greek & Roman Classical","Chinese Ming Dynasty","Japanese Tansu","Renaissance","Baroque & Rococo","Chippendale","Shaker","Victorian","Arts & Crafts","Art Nouveau","Art Deco","Bauhaus","Scandinavian Modern","Mid-Century Modern (Eames)","Memphis Milano","Postmodern","Minimalist Contemporary","Wabi-Sabi / Rustic Japanese","Handcrafted / Artisan","Brutalist Furniture","Futuristic / Space Age","Sustainable / Reclaimed","3D-Printed Design"],
+    "Collectible / Object": ["Vintage Vinyl Records","Art Books / Zines","Trading Cards (TCG)","Designer Vinyl Toys","Antique Ceramics","Chinese Porcelain","Japanese Netsuke","African Masks","Pre-Columbian Artifacts","Ancient Coins","Vintage Posters","Original Artwork","Vintage Cameras","Vintage Watches","Mechanical Clocks / Automata","Rare Books / First Editions","Limited Edition Sneakers","Luxury Handbags","Vintage Jewelry","Crystal / Gemstone Specimens","Fossils","Meteorites"]
+  }
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let currentMode = 'manual';
+let selections = {};
+let lockedKeys = new Set();
+let activeCategory = Object.keys(CATEGORIES)[0];
+let savedCharacters = [];
+let lastResult = null;
+let showSaved = false;
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  const total = Object.values(CATEGORIES).reduce((a, cat) =>
+    a + Object.entries(cat).filter(([k]) => k !== 'icon').reduce((b, [, v]) => b + v.length, 0), 0);
+  const cats = Object.values(CATEGORIES).reduce((a, cat) =>
+    a + Object.keys(cat).filter(k => k !== 'icon').length, 0);
+  document.getElementById('meta-count').textContent = `${total.toLocaleString()} elements across ${cats} categories`;
+  document.getElementById('footer-count').textContent = `${total.toLocaleString()} elements — ${cats} categories`;
+
+  buildCatNav();
+  renderSubcats();
+  setMode('random');
+
+  // API key live check
+  document.getElementById('api-key-input').addEventListener('input', function() {
+    const len = this.value.trim().length;
+    const label = document.getElementById('api-label');
+    const status = document.getElementById('api-status');
+    const desc = document.getElementById('api-desc');
+    if (len > 10) {
+      label.textContent = `✓ API Key Active — ${len} characters`;
+      label.className = 'api-label active';
+      status.style.display = 'block';
+      desc.style.display = 'none';
+    } else {
+      label.textContent = '🔑 Anthropic API Key';
+      label.className = 'api-label';
+      status.style.display = 'none';
+      desc.style.display = 'block';
+    }
+  });
+}
+
+// ============================================================
+// MODE
+// ============================================================
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-manual').className = 'mode-btn' + (mode === 'manual' ? ' active' : '');
+  document.getElementById('btn-random').className = 'mode-btn' + (mode === 'random' ? ' active' : '');
+  document.getElementById('manual-panel').style.display = mode === 'manual' ? 'block' : 'none';
+  const note = document.getElementById('gen-note');
+  note.textContent = mode === 'random'
+    ? 'Every element will be randomly selected — lock any to keep it.'
+    : 'Select elements from the categories above, then generate.';
+}
+
+function toggleSaved() {
+  showSaved = !showSaved;
+  document.getElementById('saved-section').style.display = showSaved ? 'block' : 'none';
+  document.getElementById('btn-saved').className = 'mode-btn' + (showSaved ? ' active' : '');
+}
+
+// ============================================================
+// CAT NAV
+// ============================================================
+function buildCatNav() {
+  const nav = document.getElementById('cat-nav');
+  nav.innerHTML = '';
+  Object.entries(CATEGORIES).forEach(([cat, data]) => {
+    const btn = document.createElement('button');
+    const count = Object.keys(data).filter(k => k !== 'icon' && selections[k]).length;
+    btn.className = 'cat-btn' + (cat === activeCategory ? ' active' : '');
+    btn.innerHTML = `${data.icon} ${cat}${count > 0 ? ` <span class="cat-count">${count}</span>` : ''}`;
+    btn.onclick = () => { activeCategory = cat; buildCatNav(); renderSubcats(); };
+    nav.appendChild(btn);
+  });
+}
+
+function renderSubcats() {
+  const panel = document.getElementById('subcat-panel');
+  panel.innerHTML = '';
+  const data = CATEGORIES[activeCategory];
+  Object.entries(data).forEach(([sub, items]) => {
+    if (sub === 'icon') return;
+    const div = document.createElement('div');
+    div.className = 'subcat-item';
+    const isLocked = lockedKeys.has(sub);
+    const hasVal = !!selections[sub];
+    div.innerHTML = `
+      <div class="subcat-label">
+        <span>${sub.toUpperCase()}</span>
+        <button class="lock-btn ${isLocked ? 'locked' : ''}" onclick="toggleLock('${sub}')">${isLocked ? '🔒' : '🔓'}</button>
+        ${hasVal ? `<button class="clear-btn" onclick="clearSel('${sub}')">✕ clear</button>` : ''}
+      </div>
+      <select class="${hasVal ? 'selected' : ''}" onchange="setSel('${sub}', this.value)">
+        <option value="">— Select —</option>
+        ${items.map(item => `<option value="${item}" ${selections[sub] === item ? 'selected' : ''}>${item}</option>`).join('')}
+      </select>`;
+    panel.appendChild(div);
+  });
+}
+
+function setSel(sub, val) {
+  if (val) selections[sub] = val; else delete selections[sub];
+  buildCatNav();
+  renderSubcats();
+  renderTags();
+}
+
+function clearSel(sub) { delete selections[sub]; buildCatNav(); renderSubcats(); renderTags(); }
+function toggleLock(sub) {
+  if (lockedKeys.has(sub)) lockedKeys.delete(sub); else lockedKeys.add(sub);
+  renderSubcats();
+}
+
+function renderTags() {
+  const row = document.getElementById('tags-row');
+  const entries = Object.entries(selections);
+  if (entries.length === 0) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  row.innerHTML = entries.map(([k, v]) =>
+    `<span class="tag"><span class="tag-key">${k}:</span>${v}</span>`).join('');
+}
+
+// ============================================================
+// RANDOM
+// ============================================================
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function buildRandom() {
+  const all = [];
+  Object.entries(CATEGORIES).forEach(([, data]) => {
+    Object.entries(data).forEach(([sub, items]) => { if (sub !== 'icon') all.push({ sub, items }); });
+  });
+  const core = ["Ethnicity / Cultural Background","Age Archetype","Fashion Era / Style","Fabric / Textile","Color Family","Art Movement / Ism","Environmental Setting","Lighting Style","Camera Angle"];
+  const result = {};
+  all.forEach(({ sub, items }) => { if (core.includes(sub)) result[sub] = pickRandom(items); });
+  const extras = all.filter(s => !core.includes(s.sub));
+  for (let i = 0; i < 4; i++) { const p = pickRandom(extras); if (p) result[p.sub] = pickRandom(p.items); }
+  return result;
+}
+
+function getRarity(sel) {
+  const v = Object.values(sel).join(' ').toLowerCase();
+  let s = Object.keys(sel).length * 8;
+  if (v.includes('african') && v.includes('japanese')) s += 30;
+  if (v.includes('indigenous') || v.includes('maori') || v.includes('inuit')) s += 25;
+  if (v.includes('wabi-sabi') || v.includes('kintsugi')) s += 15;
+  if (v.includes('afrofutur')) s += 20;
+  if (v.includes('biomechanical') || v.includes('glitch')) s += 20;
+  if (v.includes('baroque') && v.includes('cyberpunk')) s += 35;
+  s = Math.min(s, 100);
+  if (s >= 80) return { label: 'Legendary', color: '#8B6914' };
+  if (s >= 60) return { label: 'Rare', color: '#5a3d8a' };
+  if (s >= 40) return { label: 'Uncommon', color: '#2d5a8a' };
+  return { label: 'Common', color: '#4a7c59' };
+}
+
+// ============================================================
+// GENERATE
+// ============================================================
+async function generate() {
+  const apiKey = document.getElementById('api-key-input').value.trim();
+  if (apiKey.length < 10) {
+    showError('Please paste your Anthropic API key in the box above first.');
+    return;
+  }
+
+  let finalSelections = { ...selections };
+  if (currentMode === 'random') {
+    const random = buildRandom();
+    lockedKeys.forEach(k => { if (selections[k]) random[k] = selections[k]; });
+    finalSelections = random;
+    selections = finalSelections;
+    renderTags();
+  }
+
+  if (Object.keys(finalSelections).length === 0) {
+    showError('Please select at least one element first.');
+    return;
+  }
+
+  hideError();
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('gen-btn').disabled = true;
+
+  const selText = Object.entries(finalSelections).map(([k, v]) => `${k}: ${v}`).join('\n');
+  const prompt = `You are a creative director for a visionary AI art studio. Using these ${currentMode === 'random' ? 'randomly' : 'carefully'} combined elements, write:
+
+1. A CHARACTER NAME (invented, poetic, cross-cultural — one or two words only)
+2. A SHORT CHARACTER STORY (exactly 3 sentences — evocative, cinematic, mysterious)
+3. A DETAILED AI IMAGE PROMPT (for Midjourney/DALL-E/Stable Diffusion — at least 80 words, rich with visual detail, textures, lighting, atmosphere, composition, and specific style references)
+
+Elements:
+${selText}
+
+Format your response EXACTLY like this:
+NAME: [character name]
+STORY: [3-sentence story]
+PROMPT: [full detailed image generation prompt]`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const raw = await response.text();
+    if (!response.ok) throw new Error(`API ${response.status}: ${raw.slice(0, 200)}`);
+
+    const data = JSON.parse(raw);
+    let text = '';
+    if (Array.isArray(data.content)) {
+      data.content.forEach(b => { if (b.type === 'text') text += b.text; });
+    }
+    if (!text) throw new Error('Empty response — please try again');
+
+    // Parse line by line
+    const lines = text.split('\n');
+    let cur = '';
+    const sec = { name: [], story: [], prompt: [] };
+    for (const line of lines) {
+      const up = line.toUpperCase().trim();
+      if (up.startsWith('NAME:')) { cur = 'name'; const v = line.replace(/^NAME:/i,'').trim(); if(v) sec.name.push(v); }
+      else if (up.startsWith('STORY:')) { cur = 'story'; const v = line.replace(/^STORY:/i,'').trim(); if(v) sec.story.push(v); }
+      else if (up.startsWith('PROMPT:') || up.startsWith('IMAGE PROMPT:')) { cur = 'prompt'; const v = line.replace(/^(?:IMAGE )?PROMPT:/i,'').trim(); if(v) sec.prompt.push(v); }
+      else if (line.trim() && cur) sec[cur].push(line.trim());
+    }
+
+    const name = sec.name.join(' ').trim() || 'Unknown';
+    const story = sec.story.join(' ').trim();
+    const imagePrompt = sec.prompt.join(' ').trim() || text;
+    const rarity = getRarity(finalSelections);
+
+    lastResult = { name, story, imagePrompt, rarity, selections: finalSelections };
+    renderResult(lastResult);
+
+  } catch(e) {
+    showError(e.message.includes('fetch') || e.message.includes('network')
+      ? 'Network error — make sure you are opening this file in a browser with internet access.'
+      : 'Error: ' + e.message);
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('gen-btn').disabled = false;
+  }
+}
+
+function renderResult(r) {
+  document.getElementById('r-rarity').textContent = r.rarity.label + ' Character';
+  document.getElementById('r-rarity').style.color = r.rarity.color;
+  document.getElementById('r-name').textContent = r.name;
+  document.getElementById('r-story').textContent = r.story;
+  document.getElementById('r-prompt').textContent = r.imagePrompt;
+
+  const el = document.getElementById('r-elements');
+  el.innerHTML = Object.entries(r.selections).map(([k,v]) =>
+    `<div class="element-row"><span class="element-key">${k}</span><span class="element-val">${v}</span></div>`
+  ).join('');
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyPrompt() {
+  if (!lastResult) return;
+  const text = lastResult.imagePrompt;
+  // Try modern clipboard API first, fall back to execCommand
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(flashCopied).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); flashCopied(); } catch(e) { alert('Please manually select and copy the prompt text above.'); }
+  document.body.removeChild(ta);
+}
+
+function flashCopied() {
+  const btn = document.getElementById('copy-btn');
+  btn.textContent = 'Copied ✓';
+  btn.className = 'action-btn copied';
+  setTimeout(() => { btn.textContent = 'Copy Prompt'; btn.className = 'action-btn'; }, 2000);
+}
+
+function saveChar() {
+  if (!lastResult) return;
+  savedCharacters.unshift({ ...lastResult, id: Date.now() });
+  document.getElementById('saved-count').textContent = savedCharacters.length;
+  renderSaved();
+  // Show saved section automatically
+  if (!showSaved) toggleSaved();
+  // Flash the save button
+  const btns = document.querySelectorAll('.action-btn');
+  btns.forEach(b => { if (b.textContent === 'Save Character') {
+    b.textContent = 'Saved ✓';
+    b.className = 'action-btn copied';
+    setTimeout(() => { b.textContent = 'Save Character'; b.className = 'action-btn'; }, 2000);
+  }});
+}
+
+function renderSaved() {
+  const list = document.getElementById('saved-list');
+  if (savedCharacters.length === 0) {
+    list.innerHTML = '<p style="color:var(--ink-faint);font-style:italic;font-family:\'Cormorant Garamond\',serif;font-size:18px;">No saved characters yet.</p>';
+    return;
+  }
+  list.innerHTML = savedCharacters.map(c => `
+    <div class="saved-item">
+      <div>
+        <p class="saved-rarity" style="color:${c.rarity.color}">${c.rarity.label}</p>
+        <p class="saved-name">${c.name}</p>
+        <p class="saved-story">${c.story}</p>
+      </div>
+      <button class="action-btn" onclick="navigator.clipboard.writeText(\`${c.imagePrompt.replace(/`/g,"'")}\`)">Copy Prompt</button>
+    </div>`).join('');
+}
+
+function showError(msg) {
+  const box = document.getElementById('error-box');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+function hideError() { document.getElementById('error-box').style.display = 'none'; }
+function toggleVis() {
+  const inp = document.getElementById('api-key-input');
+  const btn = document.getElementById('toggle-vis');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
