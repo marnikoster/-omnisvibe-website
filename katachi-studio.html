@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KATACHI — Production Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #c8f542;
+  --accent-dim: rgba(200,245,66,0.08);
+  --accent-border: rgba(200,245,66,0.25);
+  --bg: #070707;
+  --surface: rgba(255,255,255,0.025);
+  --surface2: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.15);
+  --text: #f0f0f0;
+  --muted: rgba(255,255,255,0.4);
+  --dim: rgba(255,255,255,0.15);
+  --danger: #ff4455;
+  --success: #42f5a8;
+  --warning: #f5a842;
+  --info: #42c8f5;
+  --mono: 'Space Mono', monospace;
+  --display: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; display: flex; flex-direction: column; }
+
+/* HEADER */
+header { border-bottom: 1px solid var(--border); padding: 0 24px; height: 54px; display: flex; align-items: center; justify-content: space-between; background: rgba(7,7,7,0.97); backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 100; }
+.logo { font-family: var(--display); font-size: 13px; font-weight: 800; letter-spacing: 0.35em; color: var(--accent); }
+.header-tag { font-size: 9px; letter-spacing: 0.2em; color: var(--muted); }
+.divider { width: 1px; height: 16px; background: var(--border); margin: 0 12px; }
+.header-left { display: flex; align-items: center; }
+.hbadge { font-size: 8px; background: var(--accent-dim); border: 1px solid var(--accent-border); color: var(--accent); border-radius: 4px; padding: 2px 7px; letter-spacing: 0.1em; }
+
+main { flex: 1; max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; width: 100%; }
+h1 { font-family: var(--display); font-size: 26px; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 6px; }
+.subtitle { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; margin-bottom: 32px; line-height: 1.8; }
+
+/* PIPELINE BAR */
+.pipeline { display: flex; align-items: center; gap: 0; margin-bottom: 32px; overflow-x: auto; padding-bottom: 4px; }
+.pnode { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 72px; }
+.pcircle { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--dim); transition: all 0.3s; background: var(--bg); }
+.pcircle.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.pcircle.done { border-color: var(--success); color: var(--success); background: rgba(66,245,168,0.08); }
+.pcircle.running { border-color: var(--warning); color: var(--warning); animation: pr 1.5s infinite; }
+@keyframes pr { 0%,100%{box-shadow:0 0 0 0 rgba(245,168,66,0.3)} 50%{box-shadow:0 0 0 8px rgba(245,168,66,0)} }
+.plabel { font-size: 8px; letter-spacing: 0.1em; color: var(--dim); text-align: center; max-width: 64px; line-height: 1.4; }
+.plabel.active { color: var(--accent); }
+.plabel.done { color: var(--success); }
+.plabel.running { color: var(--warning); }
+.parrow { flex: 1; height: 2px; background: var(--border); min-width: 14px; position: relative; top: -10px; transition: background 0.3s; }
+.parrow.done { background: var(--success); }
+.parrow.active { background: var(--accent); }
+
+/* API KEYS */
+.api-section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 24px; }
+.api-title { font-size: 9px; letter-spacing: 0.18em; color: var(--accent); margin-bottom: 14px; font-weight: 700; }
+.api-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width:640px){ .api-grid { grid-template-columns: 1fr; } }
+.api-group { display: flex; flex-direction: column; gap: 5px; }
+.api-label { font-size: 9px; letter-spacing: 0.13em; color: var(--dim); }
+.api-row { display: flex; gap: 8px; }
+.api-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 10px; padding: 8px 10px; outline: none; transition: border-color 0.15s; flex: 1; }
+.api-input:focus { border-color: var(--accent-border); }
+.api-status { font-size: 9px; letter-spacing: 0.08em; margin-top: 3px; min-height: 13px; }
+.ok { color: var(--success); }
+.warn { color: var(--warning); }
+
+/* THREE COL LAYOUT */
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media(max-width:900px){ .three-col { grid-template-columns: 1fr; } }
+@media(max-width:640px){ .two-col { grid-template-columns: 1fr; } }
+
+/* PANELS */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.panel-title { font-size: 9px; letter-spacing: 0.18em; color: var(--accent); margin-bottom: 14px; font-weight: 700; }
+.panel-sub { font-size: 9px; color: var(--dim); letter-spacing: 0.06em; margin-bottom: 12px; line-height: 1.6; }
+
+/* REFERENCE IMAGES */
+.ref-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.ref-slot { border: 1.5px dashed rgba(255,255,255,0.1); border-radius: 7px; aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; background: rgba(255,255,255,0.01); }
+.ref-slot:hover { border-color: var(--accent); background: var(--accent-dim); }
+.ref-slot.filled { border-style: solid; border-color: var(--accent-border); }
+.ref-slot img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; border-radius: 6px; }
+.ref-slot-label { font-size: 8px; color: var(--dim); letter-spacing: 0.08em; text-align: center; padding: 4px; }
+.ref-slot-num { position: absolute; top: 4px; left: 4px; background: rgba(0,0,0,0.75); color: var(--accent); font-size: 8px; border-radius: 3px; padding: 1px 5px; letter-spacing: 0.08em; }
+.ref-remove { position: absolute; top: 3px; right: 3px; background: rgba(0,0,0,0.8); border: none; color: var(--danger); border-radius: 3px; padding: 1px 5px; font-size: 10px; cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+.ref-slot:hover .ref-remove { opacity: 1; }
+
+/* CONSISTENCY PROMPT */
+.consistency-block { background: rgba(200,245,66,0.04); border: 1px solid var(--accent-border); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+.consistency-label { font-size: 8px; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 6px; }
+.consistency-text { font-size: 9px; color: var(--muted); letter-spacing: 0.04em; line-height: 1.7; }
+
+/* SCENE INPUTS */
+.scenes-container { display: flex; flex-direction: column; gap: 10px; }
+.scene-row { display: flex; gap: 10px; align-items: flex-start; }
+.scene-num { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--dim); flex-shrink: 0; margin-top: 4px; letter-spacing: 0; }
+.scene-num.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.scene-num.done { border-color: var(--success); color: var(--success); background: rgba(66,245,168,0.08); }
+.scene-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 10px; padding: 8px 10px; outline: none; transition: border-color 0.15s; width: 100%; line-height: 1.6; resize: vertical; }
+.scene-input:focus { border-color: var(--accent-border); }
+
+/* SETTINGS */
+.setting-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.setting-label { font-size: 9px; letter-spacing: 0.13em; color: var(--dim); }
+.setting-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 10px; padding: 7px 9px; outline: none; transition: border-color 0.15s; width: 100%; }
+.setting-select:focus { border-color: var(--accent-border); }
+.setting-select option { background: #111; }
+
+/* BUTTONS */
+.btn-accent { background: var(--accent); border: none; border-radius: 8px; color: #070707; font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 13px 20px; cursor: pointer; letter-spacing: 0.1em; transition: opacity 0.15s; width: 100%; margin-bottom: 8px; }
+.btn-accent:hover { opacity: 0.85; }
+.btn-accent:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); border-radius: 7px; color: var(--muted); font-family: var(--mono); font-size: 10px; padding: 8px 16px; cursor: pointer; letter-spacing: 0.08em; transition: all 0.15s; }
+.btn-ghost:hover { border-color: var(--border-hover); color: var(--text); }
+.btn-small { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 8px; padding: 3px 7px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.06em; }
+.btn-small:hover { border-color: var(--accent); color: var(--accent); }
+
+/* PROGRESS */
+.progress-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; }
+.progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.progress-title { font-size: 9px; letter-spacing: 0.15em; font-weight: 700; }
+.progress-title.gen { color: var(--info); }
+.progress-title.up { color: var(--warning); }
+.progress-title.vid { color: var(--success); }
+.progress-pct { font-size: 11px; font-weight: 700; }
+.progress-bar-wrap { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; width: 0%; }
+.bar-gen { background: var(--info); }
+.bar-up { background: var(--warning); }
+.bar-vid { background: var(--success); }
+.progress-log { display: flex; flex-direction: column; gap: 3px; max-height: 100px; overflow-y: auto; }
+.log-line { font-size: 9px; color: var(--muted); letter-spacing: 0.05em; display: flex; gap: 7px; align-items: flex-start; }
+.log-line.active { color: var(--accent); }
+.log-line.done { color: var(--success); }
+.log-line.error { color: var(--danger); }
+.log-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; margin-top: 3px; }
+
+/* RESULTS */
+.section-header { display: flex; align-items: center; gap: 12px; margin: 28px 0 16px; }
+.section-title { font-family: var(--display); font-size: 15px; font-weight: 600; white-space: nowrap; }
+.section-line { flex: 1; height: 1px; background: var(--border); }
+.section-badge { font-size: 8px; border-radius: 4px; padding: 2px 8px; letter-spacing: 0.1em; white-space: nowrap; }
+.badge-success { background: rgba(66,245,168,0.1); border: 1px solid rgba(66,245,168,0.2); color: var(--success); }
+.badge-info { background: rgba(66,200,245,0.1); border: 1px solid rgba(66,200,245,0.2); color: var(--info); }
+
+/* MEDIA GRID */
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.media-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; transition: border-color 0.2s; }
+.media-card:hover { border-color: var(--border-hover); }
+.media-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #111; }
+.media-video { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #111; }
+.placeholder-thumb { width: 100%; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); }
+.placeholder-text { font-size: 8px; color: var(--dim); letter-spacing: 0.1em; }
+.media-footer { padding: 6px 9px; display: flex; align-items: center; justify-content: space-between; }
+.media-label { font-size: 8px; letter-spacing: 0.1em; }
+.label-gen { color: var(--info); }
+.label-up { color: var(--warning); }
+.label-vid { color: var(--success); }
+.label-err { color: var(--danger); }
+.label-q { color: var(--warning); }
+
+.dl-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.dl-row .btn-ghost { flex: 1; min-width: 140px; text-align: center; }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <span class="logo">KATACHI</span>
+    <div class="divider"></div>
+    <span class="header-tag">PRODUCTION STUDIO</span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="hbadge">GPT IMAGE 2 + ESRGAN + SEEDANCE 2.0</span>
+    <button class="btn-small" onclick="resetAll()">↺ reset</button>
+  </div>
+</header>
+
+<main>
+  <h1>Katachi Production Studio</h1>
+  <p class="subtitle">
+    Describe your 12 scenes → upload up to 8 reference images → GPT Image 2 generates each scene at full resolution →<br>
+    Real-ESRGAN 4× upscales each image → Seedance 2.0 generates video from each → download all clips as ZIP.<br>
+    No Higgsfield. No storyboard grids. No manual steps. Everything in one place.
+  </p>
+
+  <!-- PIPELINE -->
+  <div class="pipeline">
+    <div class="pnode"><div class="pcircle active" id="pc1">✎</div><div class="plabel active" id="pl1">SCENES</div></div>
+    <div class="parrow" id="pa1"></div>
+    <div class="pnode"><div class="pcircle" id="pc2">⊞</div><div class="plabel" id="pl2">REFS</div></div>
+    <div class="parrow" id="pa2"></div>
+    <div class="pnode"><div class="pcircle" id="pc3">◈</div><div class="plabel" id="pl3">GPT IMAGE 2</div></div>
+    <div class="parrow" id="pa3"></div>
+    <div class="pnode"><div class="pcircle" id="pc4">4×</div><div class="plabel" id="pl4">ESRGAN</div></div>
+    <div class="parrow" id="pa4"></div>
+    <div class="pnode"><div class="pcircle" id="pc5">▶</div><div class="plabel" id="pl5">SEEDANCE 2.0</div></div>
+    <div class="parrow" id="pa5"></div>
+    <div class="pnode"><div class="pcircle" id="pc6">↓</div><div class="plabel" id="pl6">DOWNLOAD</div></div>
+  </div>
+
+  <!-- API KEYS -->
+  <div class="api-section">
+    <div class="api-title">API KEYS</div>
+    <div class="api-grid">
+      <div class="api-group">
+        <div class="api-label">OPENAI API KEY — for GPT Image 2 generation</div>
+        <div class="api-row">
+          <input type="password" class="api-input" id="openai-key" placeholder="sk-..." oninput="checkKeys()">
+          <button class="btn-small" onclick="toggleVis('openai-key')">show</button>
+        </div>
+        <div class="api-status warn" id="openai-status">⚠ Required for image generation</div>
+      </div>
+      <div class="api-group">
+        <div class="api-label">FAL.AI API KEY — for ESRGAN upscaling + Seedance 2.0 video</div>
+        <div class="api-row">
+          <input type="password" class="api-input" id="fal-key" placeholder="Your fal.ai key..." oninput="checkKeys()">
+          <button class="btn-small" onclick="toggleVis('fal-key')">show</button>
+        </div>
+        <div class="api-status warn" id="fal-status">⚠ Required for upscaling + video generation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFERENCE IMAGES + CONSISTENCY -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">01 — REFERENCE IMAGES (up to 8)</div>
+      <div class="panel-sub">Upload character sheets, environment references, and style guides. These are attached to every GPT Image 2 generation to lock the Katachi visual identity.</div>
+      <div class="ref-grid" id="ref-grid">
+        <!-- Slots built by JS -->
+      </div>
+      <input type="file" id="ref-file-input" accept="image/*" multiple style="display:none" onchange="handleRefFiles(this.files)">
+      <button class="btn-ghost" style="width:100%;font-size:9px" onclick="document.getElementById('ref-file-input').click()">+ add reference images</button>
+      <div style="font-size:9px;color:var(--dim);letter-spacing:0.06em;margin-top:8px">
+        Suggested: Mao sheet · Kei sheet · Tama sheet · Kitchen ref · Forest ref · Shore ref
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">02 — CONSISTENCY LOCK</div>
+      <div class="panel-sub">This block is automatically prepended to every scene prompt. Edit if needed.</div>
+      <div class="consistency-block">
+        <div class="consistency-label">MASTER PROMPT — AUTO-APPLIED TO EVERY SCENE</div>
+        <textarea class="scene-input" id="consistency-prompt" rows="8" style="font-size:9px;margin-top:4px">Studio Ghibli painterly quality — warm luminous light, soft atmospheric depth, hand-painted atmosphere. Characters retain full 3D volume, weight, and presence — NOT flattened into 2D anime. Character rendering style: hyperrealistic 3D with soft painterly skin, volumetric hair, fabric with natural drape and weight. Think: 3D characters placed inside a Ghibli painted world. Warm amber-gold light. Soft colour grading. Cinematic depth of field. The world is painted — the characters are sculptural within it. All environments must match the reference images exactly. Place the characters INTO the existing environments. The reference images are locked canon. 16:9 cinematic widescreen. Award-winning fantasy film quality.</textarea>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">IMAGE SIZE</div>
+        <select class="setting-select" id="img-size">
+          <option value="1792x1024" selected>1792×1024 — widescreen HD (recommended)</option>
+          <option value="1024x1024">1024×1024 — square</option>
+          <option value="1024x1792">1024×1792 — vertical</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">VIDEO DURATION</div>
+        <select class="setting-select" id="duration">
+          <option value="5">5 seconds</option>
+          <option value="8">8 seconds</option>
+          <option value="10" selected>10 seconds</option>
+          <option value="15">15 seconds</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">VIDEO MODEL</div>
+        <select class="setting-select" id="vid-model">
+          <option value="fal-ai/seedance-v2/image-to-video">Seedance 2.0 — full quality</option>
+          <option value="fal-ai/seedance-v2/image-to-video-fast">Seedance 2.0 Fast</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE DESCRIPTIONS -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-title">03 — SCENE DESCRIPTIONS (12 scenes)</div>
+    <div class="panel-sub">Describe each scene. The consistency lock + reference images are automatically applied to every generation. Be specific about characters, actions, camera angle, lighting, and mood.</div>
+    <div class="scenes-container" id="scenes-container">
+      <!-- Built by JS -->
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn-ghost" style="font-size:9px" onclick="clearAllScenes()">clear all scenes</button>
+      <button class="btn-ghost" style="font-size:9px" onclick="fillExampleScenes()">load episode 2 example</button>
+    </div>
+  </div>
+
+  <!-- RUN BUTTONS -->
+  <button class="btn-accent" id="run-full-btn" onclick="runFullPipeline()" disabled>
+    ▶ RUN FULL PIPELINE — GENERATE IMAGES + UPSCALE + CREATE VIDEOS
+  </button>
+  <div style="display:flex;gap:10px;margin-bottom:28px">
+    <button class="btn-ghost" id="gen-only-btn" onclick="runGenOnly()" disabled style="flex:1">◈ Generate Images Only (no video)</button>
+    <button class="btn-ghost" id="up-only-btn" onclick="runUpscaleOnly()" disabled style="flex:1;display:none">4× Upscale Generated Images</button>
+  </div>
+
+  <!-- PROGRESS PANELS -->
+  <div id="gen-progress" style="display:none" class="progress-panel">
+    <div class="progress-header">
+      <div class="progress-title gen">GPT IMAGE 2 — GENERATING SCENES</div>
+      <div class="progress-pct" id="gp-pct" style="color:var(--info)">0%</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill bar-gen" id="gp-bar"></div></div>
+    <div class="progress-log" id="gp-log"></div>
+  </div>
+
+  <div id="up-progress" style="display:none" class="progress-panel">
+    <div class="progress-header">
+      <div class="progress-title up">REAL-ESRGAN — UPSCALING IMAGES</div>
+      <div class="progress-pct" id="up-pct" style="color:var(--warning)">0%</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill bar-up" id="up-bar"></div></div>
+    <div class="progress-log" id="up-log"></div>
+  </div>
+
+  <div id="vid-progress" style="display:none" class="progress-panel">
+    <div class="progress-header">
+      <div class="progress-title vid">SEEDANCE 2.0 — GENERATING VIDEOS</div>
+      <div class="progress-pct" id="vp-pct" style="color:var(--success)">0%</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill bar-vid" id="vp-bar"></div></div>
+    <div class="progress-log" id="vp-log"></div>
+  </div>
+
+  <!-- GENERATED IMAGES -->
+  <div id="images-section" style="display:none">
+    <div class="section-header">
+      <div class="section-title">Generated Scenes</div>
+      <div class="section-line"></div>
+      <div class="section-badge badge-info" id="images-badge">0 SCENES</div>
+    </div>
+    <div class="media-grid" id="images-grid"></div>
+    <div class="dl-row">
+      <button class="btn-ghost" onclick="dlAllImages()">↓ download images as ZIP</button>
+      <button class="btn-ghost" id="continue-btn" style="display:none" onclick="runUpscaleAndVideo()">▶ upscale + generate videos from these images</button>
+    </div>
+  </div>
+
+  <!-- VIDEOS -->
+  <div id="videos-section" style="display:none">
+    <div class="section-header">
+      <div class="section-title">Generated Videos</div>
+      <div class="section-line"></div>
+      <div class="section-badge badge-success" id="videos-badge">0 CLIPS</div>
+    </div>
+    <div class="media-grid" id="videos-grid"></div>
+    <div class="dl-row">
+      <button class="btn-ghost" onclick="dlAllVideos()">↓ download all clips as ZIP</button>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+
+// ── STATE ──
+let refImages = []; // {dataUrl, name}
+let generatedImages = []; // {dataUrl, url, index}
+let upscaledImages = []; // {dataUrl, url, index}
+let generatedVideos = []; // {url, index}
+let isRunning = false;
+const MAX_REFS = 8;
+const SCENE_COUNT = 12;
+
+// ── INIT ──
+window.onload = () => {
+  buildRefSlots();
+  buildSceneInputs();
+};
+
+// ── API KEYS ──
+function toggleVis(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function checkKeys() {
+  const ok = document.getElementById('openai-key').value.trim().length > 20;
+  const fok = document.getElementById('fal-key').value.trim().length > 20;
+  const os = document.getElementById('openai-status');
+  const fs = document.getElementById('fal-status');
+  os.className = ok ? 'api-status ok' : 'api-status warn';
+  os.textContent = ok ? '✓ OpenAI key ready' : '⚠ Required for image generation';
+  fs.className = fok ? 'api-status ok' : 'api-status warn';
+  fs.textContent = fok ? '✓ fal.ai key ready' : '⚠ Required for upscaling + video';
+  const allReady = ok && fok;
+  document.getElementById('run-full-btn').disabled = !allReady;
+  document.getElementById('gen-only-btn').disabled = !ok;
+}
+
+// ── REFERENCE IMAGES ──
+function buildRefSlots() {
+  const grid = document.getElementById('ref-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < MAX_REFS; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'ref-slot' + (refImages[i] ? ' filled' : '');
+    slot.id = 'ref-slot-' + i;
+    if (refImages[i]) {
+      slot.innerHTML = `
+        <img src="${refImages[i].dataUrl}" alt="">
+        <div class="ref-slot-num">REF ${i+1}</div>
+        <button class="ref-remove" onclick="removeRef(${i})">×</button>`;
+    } else {
+      slot.innerHTML = `<div class="ref-slot-label">REF ${i+1}</div>`;
+      slot.onclick = () => document.getElementById('ref-file-input').click();
+    }
+    grid.appendChild(slot);
+  }
+}
+
+function handleRefFiles(files) {
+  Array.from(files).forEach(file => {
+    if (refImages.length >= MAX_REFS) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      refImages.push({ dataUrl: e.target.result, name: file.name });
+      buildRefSlots();
+      if (refImages.length > 0) setPipeNode(2, 'done');
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('ref-file-input').value = '';
+}
+
+function removeRef(i) {
+  refImages.splice(i, 1);
+  buildRefSlots();
+  if (refImages.length === 0) setPipeNode(2, 'active');
+}
+
+// ── SCENE INPUTS ──
+function buildSceneInputs() {
+  const container = document.getElementById('scenes-container');
+  container.innerHTML = '';
+  for (let i = 0; i < SCENE_COUNT; i++) {
+    const row = document.createElement('div');
+    row.className = 'scene-row';
+    row.innerHTML = `
+      <div class="scene-num" id="snum-${i}">${String(i+1).padStart(2,'0')}</div>
+      <textarea class="scene-input" id="scene-${i}" rows="2"
+        placeholder="Scene ${i+1} — describe the shot, characters, action, camera angle, lighting, mood..."
+        oninput="checkScenes()"></textarea>`;
+    container.appendChild(row);
+  }
+}
+
+function checkScenes() {
+  const filled = Array.from({length: SCENE_COUNT}, (_,i) =>
+    (document.getElementById('scene-'+i)?.value || '').trim().length > 5
+  ).filter(Boolean).length;
+  if (filled > 0) setPipeNode(1, 'done');
+}
+
+function clearAllScenes() {
+  for (let i = 0; i < SCENE_COUNT; i++) {
+    const el = document.getElementById('scene-'+i);
+    if (el) el.value = '';
+  }
+}
+
+function fillExampleScenes() {
+  const examples = [
+    "Wide aerial shot. Tama the small ancient bronze sphere drone with moth-wing rotors flies along the Katachi coastline at golden hour. Sea stacks below. Cool blue lens eye. Island cliffs behind. Camera locked, observing.",
+    "Low aerial tracking. Tama skimming just above the ancient forest canopy. Morning mist threading through enormous trees. Dappled golden light shafts breaking through. Camera follows from behind.",
+    "Close on Tama's single large lens eye. Cool blue iris. The forest reflected in the glass surface. Focused and purposeful. Macro shot.",
+    "Wide aerial. Tama clears the inner treeline. The full waterfall reveals — tall, white, cascading. The alchemy kitchen structure visible to the right — raw concrete, open terrace, warm amber light within.",
+    "Tama's POV entering the alchemy kitchen through the open terrace edge. Warm amber interior light replacing the cool exterior. Dried herbs hanging, glowing bottles on shelves. The kitchen is empty and still.",
+    "Wide interior. Mao enters the kitchen from the left. Silver-white hair, pale sky-blue wrap vest, wide blue harem trousers, blue sandals. She moves toward the shelves, doesn't see Tama yet.",
+    "Close on Mao's hand reaching for a bunch of dried herbs from the hanging rack. Practiced fingers. Warm amber shelf light. The herbs are real — dried bundles, fragrant and ancient.",
+    "Mao pauses mid-reach. She has sensed something in the space. Her hand still. Eyes not looking at the herbs. Listening to the space behind her. Stillness.",
+    "Mao turns slowly. She sees Tama hovering near the bench. Her expression doesn't change. Simply looks. Tama's lens blinks — cool blue warming toward amber.",
+    "Close on Mao's face. Silver-grey eyes taking Tama in completely. A slow blink. The beginning of a smile — not yet arrived. Warm morning light on her silver hair.",
+    "Medium wide. Mao and Tama facing each other across the dark stone bench. The waterfall fully visible through the open terrace behind both of them. Morning light. A held moment outside of time.",
+    "Final wide aerial from above the open terrace looking down into the kitchen. Mao at work at the bench below. Tama hovering beside her shoulder. Waterfall beyond. Jungle all around. The island breathing. Fade to warm gold."
+  ];
+  examples.forEach((ex, i) => {
+    const el = document.getElementById('scene-'+i);
+    if (el) el.value = ex;
+  });
+  checkScenes();
+}
+
+// ── PIPELINE NODES ──
+function setPipeNode(n, state) {
+  const c = document.getElementById('pc'+n);
+  const l = document.getElementById('pl'+n);
+  const a = document.getElementById('pa'+n);
+  if (!c) return;
+  c.className = 'pcircle ' + state;
+  l.className = 'plabel ' + state;
+  if (a) a.className = 'parrow ' + (state==='done'?'done':state==='active'||state==='running'?'active':'');
+}
+
+// ── LOGGING ──
+function addLog(containerId, text, state='') {
+  const c = document.getElementById(containerId);
+  const line = document.createElement('div');
+  line.className = 'log-line ' + state;
+  line.innerHTML = `<span class="log-dot"></span>${text}`;
+  c.appendChild(line);
+  c.scrollTop = c.scrollHeight;
+  return line;
+}
+
+function setBar(barId, pctId, pct) {
+  document.getElementById(barId).style.width = pct + '%';
+  document.getElementById(pctId).textContent = Math.round(pct) + '%';
+}
+
+// ── GPT IMAGE 2 GENERATION ──
+async function generateImage(sceneDesc, consistencyPrompt, refDataUrls, size, openaiKey) {
+  const [w, h] = size.split('x').map(Number);
+  const fullPrompt = consistencyPrompt.trim() + '\n\n' + sceneDesc.trim();
+
+  // Build message content with references
+  const content = [];
+
+  // Add reference images
+  refDataUrls.forEach((dataUrl, i) => {
+    content.push({
+      type: 'input_image',
+      image_url: dataUrl
+    });
+  });
+
+  // Add text prompt
+  content.push({ type: 'input_text', text: fullPrompt });
+
+  const resp = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'gpt-image-1',
+      prompt: fullPrompt,
+      n: 1,
+      size: size,
+      quality: 'high',
+      output_format: 'url'
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`GPT Image failed: ${resp.status} — ${err}`);
+  }
+
+  const data = await resp.json();
+  if (data.data && data.data[0]) {
+    if (data.data[0].url) return data.data[0].url;
+    if (data.data[0].b64_json) return 'data:image/png;base64,' + data.data[0].b64_json;
+  }
+  throw new Error('No image in GPT response');
+}
+
+// ── ESRGAN ──
+async function esrganUpscale(imageUrl, apiKey) {
+  const resp = await fetch('https://fal.run/fal-ai/esrgan', {
+    method: 'POST',
+    headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_url: imageUrl, scale: 4, face_enhance: false })
+  });
+  if (!resp.ok) {
+    // Try real-esrgan fallback
+    try {
+      const r2 = await fetch('https://fal.run/fal-ai/real-esrgan', {
+        method: 'POST',
+        headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: imageUrl, scale: 4 })
+      });
+      if (r2.ok) {
+        const d2 = await r2.json();
+        if (d2.request_id) return await pollFal(d2.request_id, 'fal-ai/real-esrgan', apiKey);
+        if (d2.image && d2.image.url) return d2.image.url;
+      }
+    } catch(e) {}
+    return imageUrl; // return original if upscale fails
+  }
+  const data = await resp.json();
+  if (data.request_id) return await pollFal(data.request_id, 'fal-ai/esrgan', apiKey);
+  if (data.image && data.image.url) return data.image.url;
+  return imageUrl;
+}
+
+// ── SEEDANCE ──
+async function seedanceGenerate(imageUrl, prompt, duration, model, apiKey) {
+  const resp = await fetch(`https://fal.run/${model}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_url: imageUrl, prompt, duration, aspect_ratio: '16:9', resolution: '720p' })
+  });
+  if (!resp.ok) throw new Error(`Seedance failed: ${resp.status}`);
+  const data = await resp.json();
+  if (data.request_id) return await pollFal(data.request_id, model, apiKey);
+  if (data.video && data.video.url) return data.video.url;
+  throw new Error('No video URL');
+}
+
+// ── FAL POLL ──
+async function pollFal(requestId, model, apiKey) {
+  const path = model.replace('fal-ai/', '');
+  for (let i = 0; i < 150; i++) {
+    await new Promise(r => setTimeout(r, 4000));
+    try {
+      const resp = await fetch(`https://fal.run/fal-ai/${path}/requests/${requestId}`, {
+        headers: { 'Authorization': `Key ${apiKey}` }
+      });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const s = (data.status || '').toLowerCase();
+      if (s === 'completed') {
+        const out = data.output || data;
+        if (out.image && out.image.url) return out.image.url;
+        if (out.video && out.video.url) return out.video.url;
+        if (out.images && out.images[0]) return out.images[0].url;
+        if (out.url) return out.url;
+      }
+      if (s === 'failed') throw new Error('Job failed');
+    } catch(e) { if (e.message === 'Job failed') throw e; }
+  }
+  throw new Error('Timeout');
+}
+
+// ── FULL PIPELINE ──
+async function runFullPipeline() { await runPipeline('full'); }
+async function runGenOnly() { await runPipeline('gen'); }
+async function runUpscaleAndVideo() { await runPipeline('upvid'); }
+
+async function runPipeline(mode) {
+  if (isRunning) return;
+  isRunning = true;
+
+  const openaiKey = document.getElementById('openai-key').value.trim();
+  const falKey = document.getElementById('fal-key').value.trim();
+  const consistencyPrompt = document.getElementById('consistency-prompt').value.trim();
+  const size = document.getElementById('img-size').value;
+  const duration = parseInt(document.getElementById('duration').value);
+  const vidModel = document.getElementById('vid-model').value;
+  const videoPrompt = consistencyPrompt + ' Cinematic camera movement. Slow and deliberate. No subtitles.';
+  const refDataUrls = refImages.map(r => r.dataUrl);
+
+  // Get scenes
+  const scenes = [];
+  for (let i = 0; i < SCENE_COUNT; i++) {
+    const val = (document.getElementById('scene-'+i)?.value || '').trim();
+    if (val.length > 5) scenes.push({ text: val, index: i + 1 });
+  }
+
+  if (scenes.length === 0) { alert('Please add at least one scene description.'); isRunning = false; return; }
+
+  // Disable buttons
+  ['run-full-btn','gen-only-btn'].forEach(id => document.getElementById(id).disabled = true);
+  generatedImages = []; upscaledImages = []; generatedVideos = [];
+
+  // ── PHASE 1: IMAGE GENERATION ──
+  if (mode === 'full' || mode === 'gen') {
+    document.getElementById('gen-progress').style.display = 'block';
+    document.getElementById('images-section').style.display = 'block';
+    document.getElementById('images-grid').innerHTML = '';
+    setPipeNode(3, 'running');
+
+    // Build image placeholders
+    scenes.forEach((s, i) => {
+      addImagePlaceholder(s.index, 'GENERATING...');
+      document.getElementById('snum-'+( s.index-1)).className = 'scene-num running';
+    });
+
+    let imgCompleted = 0;
+    const imgPromises = scenes.map(async (scene, i) => {
+      await new Promise(r => setTimeout(r, i * 1500)); // stagger
+      const logEl = addLog('gp-log', `Scene ${scene.index}: generating via GPT Image 2...`, 'active');
+      try {
+        const imageUrl = await generateImage(scene.text, consistencyPrompt, refDataUrls, size, openaiKey);
+        generatedImages[i] = { url: imageUrl, dataUrl: imageUrl, index: scene.index };
+        imgCompleted++;
+        updateImageCard(scene.index, imageUrl);
+        logEl.className = 'log-line done';
+        logEl.childNodes[1].textContent = `✓ Scene ${scene.index} generated`;
+        document.getElementById('snum-'+(scene.index-1)).className = 'scene-num done';
+        document.getElementById('images-badge').textContent = `${imgCompleted} / ${scenes.length} SCENES`;
+        setBar('gp-bar', 'gp-pct', (imgCompleted / scenes.length) * 100);
+      } catch(err) {
+        logEl.className = 'log-line error';
+        logEl.childNodes[1].textContent = `✗ Scene ${scene.index}: ${err.message}`;
+        document.getElementById('snum-'+(scene.index-1)).className = 'scene-num';
+        imgCompleted++;
+      }
+    });
+
+    await Promise.all(imgPromises);
+    setPipeNode(3, 'done');
+    document.getElementById('images-badge').textContent = `${generatedImages.filter(Boolean).length} SCENES READY`;
+    document.getElementById('continue-btn').style.display = mode === 'gen' ? 'block' : 'none';
+
+    if (mode === 'gen') { isRunning = false; checkKeys(); return; }
+  }
+
+  const imagesToProcess = mode === 'upvid' ? generatedImages : generatedImages.filter(Boolean);
+
+  // ── PHASE 2: ESRGAN UPSCALE ──
+  document.getElementById('up-progress').style.display = 'block';
+  setPipeNode(4, 'running');
+  let upCompleted = 0;
+
+  const upPromises = imagesToProcess.map(async (img, i) => {
+    if (!img) return;
+    await new Promise(r => setTimeout(r, i * 500));
+    const logEl = addLog('up-log', `Scene ${img.index}: upscaling 4× via ESRGAN...`, 'active');
+    try {
+      const upUrl = await esrganUpscale(img.url, falKey);
+      upscaledImages[i] = { url: upUrl, index: img.index };
+      upCompleted++;
+      logEl.className = 'log-line done';
+      logEl.childNodes[1].textContent = `✓ Scene ${img.index} upscaled`;
+      setBar('up-bar', 'up-pct', (upCompleted / imagesToProcess.length) * 100);
+    } catch(err) {
+      upscaledImages[i] = img; // use original
+      upCompleted++;
+      logEl.className = 'log-line error';
+      logEl.childNodes[1].textContent = `⚠ Scene ${img.index} upscale failed — using original`;
+    }
+  });
+
+  await Promise.all(upPromises);
+  setPipeNode(4, 'done');
+
+  if (mode === 'upvid' && mode !== 'full') { /* continue */ }
+
+  // ── PHASE 3: SEEDANCE VIDEO ──
+  document.getElementById('vid-progress').style.display = 'block';
+  document.getElementById('videos-section').style.display = 'block';
+  document.getElementById('videos-grid').innerHTML = '';
+  setPipeNode(5, 'running');
+
+  const validImages = upscaledImages.filter(Boolean);
+
+  // Build video placeholders
+  validImages.forEach(img => addVideoPlaceholder(img.index));
+
+  let vidCompleted = 0;
+  const vidPromises = validImages.map(async (img, i) => {
+    await new Promise(r => setTimeout(r, i * 1200));
+    const logEl = addLog('vp-log', `Clip ${img.index}: sending to Seedance 2.0...`, 'active');
+    updateVideoStatus(img.index, 'GENERATING', 'label-q');
+    try {
+      const videoUrl = await seedanceGenerate(img.url, videoPrompt, duration, vidModel, falKey);
+      generatedVideos.push({ url: videoUrl, index: img.index });
+      vidCompleted++;
+      updateVideoCard(img.index, videoUrl);
+      logEl.className = 'log-line done';
+      logEl.childNodes[1].textContent = `✓ Clip ${img.index} ready`;
+      document.getElementById('videos-badge').textContent = `${vidCompleted} / ${validImages.length} CLIPS`;
+      setBar('vp-bar', 'vp-pct', (vidCompleted / validImages.length) * 100);
+    } catch(err) {
+      vidCompleted++;
+      updateVideoStatus(img.index, 'ERROR', 'label-err');
+      logEl.className = 'log-line error';
+      logEl.childNodes[1].textContent = `✗ Clip ${img.index}: ${err.message}`;
+    }
+  });
+
+  await Promise.all(vidPromises);
+  setPipeNode(5, 'done');
+  setPipeNode(6, 'done');
+  document.getElementById('videos-badge').textContent = `${generatedVideos.length} CLIPS READY`;
+
+  isRunning = false;
+  checkKeys();
+}
+
+// ── CARD BUILDERS ──
+function addImagePlaceholder(index, label) {
+  const grid = document.getElementById('images-grid');
+  const card = document.createElement('div');
+  card.className = 'media-card'; card.id = `icard-${index}`;
+  card.innerHTML = `
+    <div class="placeholder-thumb" id="ithumb-${index}"><span class="placeholder-text">${label}</span></div>
+    <div class="media-footer">
+      <span class="media-label label-gen" id="ilabel-${index}">SCENE ${String(index).padStart(2,'0')}</span>
+    </div>`;
+  grid.appendChild(card);
+}
+
+function updateImageCard(index, url) {
+  const thumb = document.getElementById(`ithumb-${index}`);
+  if (!thumb) return;
+  const img = document.createElement('img');
+  img.className = 'media-img'; img.src = url;
+  thumb.replaceWith(img);
+  const label = document.getElementById(`ilabel-${index}`);
+  if (label) label.className = 'media-label label-gen';
+  const card = document.getElementById(`icard-${index}`);
+  if (card) {
+    const footer = card.querySelector('.media-footer');
+    const btn = document.createElement('button');
+    btn.className = 'btn-small'; btn.textContent = '↓';
+    btn.onclick = () => { const a = document.createElement('a'); a.href = url; a.download = `katachi-scene-${String(index).padStart(2,'0')}.png`; a.target = '_blank'; a.click(); };
+    footer.appendChild(btn);
+  }
+}
+
+function addVideoPlaceholder(index) {
+  const grid = document.getElementById('videos-grid');
+  const card = document.createElement('div');
+  card.className = 'media-card'; card.id = `vcard-${index}`;
+  card.innerHTML = `
+    <div class="placeholder-thumb" id="vthumb-${index}"><span class="placeholder-text">GENERATING</span></div>
+    <div class="media-footer">
+      <span class="media-label label-q" id="vlabel-${index}">CLIP ${String(index).padStart(2,'0')}</span>
+    </div>`;
+  grid.appendChild(card);
+}
+
+function updateVideoStatus(index, text, cls) {
+  const label = document.getElementById(`vlabel-${index}`);
+  if (label) { label.textContent = `CLIP ${String(index).padStart(2,'0')} — ${text}`; label.className = 'media-label ' + cls; }
+}
+
+function updateVideoCard(index, url) {
+  const thumb = document.getElementById(`vthumb-${index}`);
+  if (thumb) {
+    const vid = document.createElement('video');
+    vid.className = 'media-video'; vid.src = url; vid.controls = true; vid.muted = false;
+    thumb.replaceWith(vid);
+  }
+  updateVideoStatus(index, 'READY', 'label-vid');
+  const card = document.getElementById(`vcard-${index}`);
+  if (card) {
+    const footer = card.querySelector('.media-footer');
+    const btn = document.createElement('button');
+    btn.className = 'btn-small'; btn.textContent = '↓';
+    btn.onclick = () => { const a = document.createElement('a'); a.href = url; a.download = `katachi-clip-${String(index).padStart(2,'0')}.mp4`; a.target='_blank'; a.click(); };
+    footer.appendChild(btn);
+  }
+}
+
+// ── DOWNLOADS ──
+async function dlAllImages() {
+  const valid = generatedImages.filter(Boolean);
+  if (!valid.length) return;
+  const zip = new JSZip();
+  for (const img of valid) {
+    try {
+      const resp = await fetch(img.url);
+      const blob = await resp.blob();
+      zip.file(`katachi-scene-${String(img.index).padStart(2,'0')}.png`, blob);
+    } catch(e) { console.warn(e); }
+  }
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'katachi-scenes.zip'; a.click();
+}
+
+async function dlAllVideos() {
+  if (!generatedVideos.length) return;
+  const zip = new JSZip();
+  for (const v of generatedVideos) {
+    try {
+      const resp = await fetch(v.url);
+      const blob = await resp.blob();
+      zip.file(`katachi-clip-${String(v.index).padStart(2,'0')}.mp4`, blob);
+    } catch(e) { console.warn(e); }
+  }
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'katachi-videos.zip'; a.click();
+}
+
+// ── RESET ──
+function resetAll() {
+  if (isRunning) return;
+  refImages = []; generatedImages = []; upscaledImages = []; generatedVideos = [];
+  buildRefSlots(); buildSceneInputs();
+  ['gen-progress','up-progress','vid-progress','images-section','videos-section'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  ['gp-log','up-log','vp-log','images-grid','videos-grid'].forEach(id => {
+    document.getElementById(id).innerHTML = '';
+  });
+  setBar('gp-bar','gp-pct',0); setBar('up-bar','up-pct',0); setBar('vp-bar','vp-pct',0);
+  for (let i = 1; i <= 6; i++) setPipeNode(i, i===1?'active':'');
+  checkKeys();
+}
+</script>
+</body>
+</html>
