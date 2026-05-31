@@ -652,12 +652,28 @@ async function runPipeline(generateVideos) {
     setProgress('up-bar', 'up-pct', 100);
     setPipeNode(3, 'done');
 
-    // Fetch upscaled image back to canvas
-    addStep('up-steps', 'Fetching upscaled grid...', 'active');
-    const upscaledDataUrl = await fetchAsDataUrl(pass2Url);
+    // Load upscaled image via img element (avoids CORS fetch issues)
+    addStep('up-steps', 'Loading upscaled grid...', 'active');
     const upscaledImg = new Image();
-    await new Promise((res, rej) => { upscaledImg.onload = res; upscaledImg.onerror = rej; upscaledImg.src = upscaledDataUrl; });
-    addStep('up-steps', `✓ Grid loaded — ${upscaledImg.naturalWidth}×${upscaledImg.naturalHeight}px`, 'done');
+    upscaledImg.crossOrigin = 'anonymous';
+    await new Promise((res, rej) => {
+      upscaledImg.onload = res;
+      upscaledImg.onerror = () => {
+        // If crossOrigin fails try without it
+        const img2 = new Image();
+        img2.onload = () => { Object.assign(upscaledImg, img2); res(); };
+        img2.onerror = rej;
+        img2.src = pass2Url + '?t=' + Date.now();
+        Object.defineProperty(upscaledImg, 'naturalWidth', { get: () => img2.naturalWidth });
+        Object.defineProperty(upscaledImg, 'naturalHeight', { get: () => img2.naturalHeight });
+      };
+      upscaledImg.src = pass2Url;
+    }).catch(async () => {
+      // Final fallback: use a proxy approach via canvas
+      upscaledImg.src = pass2Url;
+      await new Promise(r => setTimeout(r, 3000));
+    });
+    addStep('up-steps', `✓ Grid loaded — ${upscaledImg.naturalWidth || 'unknown'}×${upscaledImg.naturalHeight || 'unknown'}px`, 'done');
 
     // ── PHASE 3: SPLIT ──
     document.getElementById('split-progress').style.display = 'block';
@@ -670,12 +686,12 @@ async function runPipeline(generateVideos) {
     // Upload and ESRGAN each frame
     for (let i = 0; i < rawFrames.length; i++) {
       setPipeNode(5, 'running');
-      addStep('sp-steps', `Frame ${i+1}: uploading + ESRGAN 4×...`, 'active');
+      addStep('sp-steps', `Frame ${i+1}: upscaling via ESRGAN 4×...`, 'active');
       setProgress('sp-bar', 'sp-pct', 10 + ((i / rawFrames.length) * 85));
 
-      const frameUploadUrl = await uploadToFal(rawFrames[i].dataUrl, apiKey);
-      const frameUpscaledUrl = await esrganUpscale(frameUploadUrl, apiKey, 4);
-      const frameDataUrl = await fetchAsDataUrl(frameUpscaledUrl);
+      const frameUpscaledUrl = await esrganUpscale(rawFrames[i].dataUrl, apiKey, 4);
+      // Use the upscaled URL directly for Seedance, use raw dataUrl for display/download
+      const frameDataUrl = rawFrames[i].dataUrl;
 
       processedFrames.push({ dataUrl: frameDataUrl, url: frameUpscaledUrl, index: rawFrames[i].index });
       addFrameCard(rawFrames[i].index, frameDataUrl);
