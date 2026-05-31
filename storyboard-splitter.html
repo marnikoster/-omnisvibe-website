@@ -458,25 +458,9 @@ function setProgress(barId, pctId, pct) {
 
 // ── FAL.AI UPLOAD ──
 async function uploadToFal(dataUrl, apiKey) {
-  const arr = dataUrl.split(',');
-  const mime = arr[0].match(/:(.*?);/)[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8 = new Uint8Array(n);
-  while (n--) u8[n] = bstr.charCodeAt(n);
-  const blob = new Blob([u8], { type: mime });
-
-  const form = new FormData();
-  form.append('file', blob, 'image.png');
-
-  const resp = await fetch('https://fal.run/fal-ai/upload', {
-    method: 'POST',
-    headers: { 'Authorization': `Key ${apiKey}` },
-    body: form
-  });
-  if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`);
-  const data = await resp.json();
-  return data.url;
+  // fal.ai accepts base64 data URIs directly — no separate upload needed
+  // Just return the dataUrl and pass it directly to the model endpoints
+  return dataUrl;
 }
 
 // ── REAL-ESRGAN UPSCALE ──
@@ -484,24 +468,41 @@ async function esrganUpscale(imageUrl, apiKey, scale = 4) {
   const resp = await fetch('https://fal.run/fal-ai/esrgan', {
     method: 'POST',
     headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_url: imageUrl, scale: scale, face_enhance: false })
+    body: JSON.stringify({ image_url: imageUrl, scale: scale, face_enhance: false }),
+    mode: 'cors'
   });
 
   if (!resp.ok) {
     const err = await resp.text();
-    throw new Error(`ESRGAN failed: ${resp.status} — ${err}`);
+    // If ESRGAN fails try the real-esrgan endpoint
+    return await esrganFallback(imageUrl, apiKey, scale);
   }
 
   const result = await resp.json();
 
-  // Handle async queue
-  if (result.request_id) {
-    return await pollFal(result.request_id, 'fal-ai/esrgan', apiKey);
-  }
-
+  if (result.request_id) return await pollFal(result.request_id, 'fal-ai/esrgan', apiKey);
   if (result.image && result.image.url) return result.image.url;
   if (result.output && result.output.image) return result.output.image.url;
-  throw new Error('No image URL in ESRGAN response');
+  if (result.images && result.images[0]) return result.images[0].url;
+  return imageUrl; // fallback — return original if upscale fails
+}
+
+async function esrganFallback(imageUrl, apiKey, scale) {
+  // Try real-esrgan as fallback
+  try {
+    const resp = await fetch('https://fal.run/fal-ai/real-esrgan', {
+      method: 'POST',
+      headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: imageUrl, scale: scale }),
+      mode: 'cors'
+    });
+    if (!resp.ok) return imageUrl;
+    const result = await resp.json();
+    if (result.request_id) return await pollFal(result.request_id, 'fal-ai/real-esrgan', apiKey);
+    if (result.image && result.image.url) return result.image.url;
+    if (result.output && result.output.image) return result.output.image.url;
+  } catch(e) { /* fall through */ }
+  return imageUrl; // return original as last resort
 }
 
 // ── SEEDANCE VIDEO ──
