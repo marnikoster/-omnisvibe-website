@@ -151,8 +151,10 @@
       <div>
         <div class="section-label" style="font-size:9px;margin-bottom:10px;">03 — CONSISTENCY LOCK</div>
         <div class="lock-box">
-          <div class="lock-label">MASTER PROMPT — AUTO-APPLIED TO EVERY SCENE</div>
+          <div class="lock-label">MASTER STYLE LOCK — AUTO-APPLIED TO EVERY SCENE</div>
           <div class="lock-text" id="lock-display"></div>
+          <div class="lock-label" style="margin-top:12px;">CHARACTER LOCKS — AUTO-INJECTED BY NAME DETECTION</div>
+          <div class="lock-text" style="color:var(--accent2);">Mention any character by name in your scene description and their full visual profile auto-attaches: <strong style="color:var(--text)">mao · kei · tama · ryu · ren · nala · sora · hikaru · hana · kumo</strong></div>
         </div>
       </div>
     </div>
@@ -220,8 +222,33 @@
 </div>
 
 <script>
-// SHORT master prompt — under 500 chars
-const MASTER = "Studio Ghibli painterly style, warm amber-gold light. 3D sculptural characters inside painted world. Mao: silver-white hair, pale blue wrap vest, blue harem trousers, gold necklaces. Kei: greying hair, short beard, open blue linen shirt, grey trousers, Polynesian arm tattoo. Tama: bronze sphere, moth-wing rotors, amber glowing eye. Alchemy kitchen: raw concrete, open terrace, jungle waterfall, dark stone bench, warm herb shelves.";
+// MASTER STYLE LOCK — style only, no character details
+const MASTER = "Studio Ghibli painterly environments, warm amber-gold light, soft atmospheric depth, hand-painted world. Characters are 3D sculptural — full volume, weight, realistic skin with subsurface scattering, volumetric hair, fabric with natural drape. NOT flat anime. The world is painted, the characters are sculptural within it. Cinematic depth of field. Every scene designed around a light event.";
+
+// CHARACTER LOCKS — auto-injected when character name appears in scene description
+const CHARACTERS = {
+  mao: "MAO: East Asian woman, mid-thirties, medium height. Silver-white hair loose and long. Pale sky-blue wrap linen vest tied at side over cream sheer long-sleeve. Wide pale blue harem trousers. Blue sandals. Layered gold necklaces. Blue drop earrings. Silver-grey eyes. Moves with total economy and quiet precision.",
+  kei: "KEI: Asian American man, mid-forties, tall, broad-shouldered. Dark greying hair medium length slightly unkempt. Short beard. Blue linen shirt open at chest over cream undershirt. Loose grey harem trousers. Leather sandals. Wooden bead bracelets. Polynesian sleeve tattoo on right arm. Warm, unhurried presence.",
+  tama: "TAMA: Round aged bronze sphere, grapefruit-sized — never larger than a human head. Moth-wing rotors fold flat when still, extend and spin overhead when flying. Single large warm glowing amber eye lens. Three small landing nubs at base. Ancient, slightly tilted. Eye colour: amber=happy/warm, blue=focused/serious, yellow=curious.",
+  ryu: "RYU: Teenage boy, East Asian, energetic build. Full streetwear — bold colours, layered graphics, chunky sneakers. Short dark hair, slightly messy. Expressive face, always in motion. Raw kinetic energy in every pose.",
+  ren: "REN: Teenager, East Asian, quieter and more observant than Ryu. Slim build. Muted streetwear palette — olive, grey, off-white. Dark hair worn neatly. Eyes that miss nothing. Still and watchful even when surrounded by movement.",
+  nala: "NALA: Young woman, late twenties, African heritage. Contemporary urban wardrobe — quality basics, clean lines. Natural hair worn loose or in a loose bun. Carries the energy of somewhere else — a visitor becoming a resident.",
+  sora: "SORA: Androgynous figure, ageless. Long pale hair, almost white. Loose layered garments in muted sky-blue and white. Moves as if slightly detached from gravity. Atmospheric, mysterious presence.",
+  hikaru: "HIKARU: Late twenties, Japanese. Tech District aesthetic — clean minimal techwear, dark palette, functional accessories. Sharp features, precise movements. The tension between technology and nature lives in their eyes.",
+  hana: "HANA: East Asian woman, similar age to Mao. Elegant and restrained. Traditional-contemporary fusion wardrobe — linen, natural fibres, minimal jewellery. Carries a quiet authority that echoes Mao's but arrived differently.",
+  kumo: "KUMO: Large cloud-grey creature, feline-adjacent but not quite a cat. Moves as if it has one extra dimension. Eyes that reflect light differently than they should. Ancient. Slightly translucent at the edges in strong light."
+};
+
+// Auto-detect which characters are mentioned in a scene prompt and inject their locks
+function buildPromptWithCharacters(sceneText) {
+  const lower = sceneText.toLowerCase();
+  const detected = [];
+  for (const [name, lock] of Object.entries(CHARACTERS)) {
+    if (lower.includes(name)) detected.push(lock);
+  }
+  const charBlock = detected.length > 0 ? '\n\nCHARACTER LOCKS:\n' + detected.join('\n') : '';
+  return (MASTER + charBlock + '\n\nSCENE: ' + sceneText).substring(0, 3800);
+}
 
 const EP2 = [
   "Mao's Alchemy Kitchen, wide establishing shot. Raw concrete walls, open terrace facing lush jungle waterfall, dark stone bench, warm-lit herb shelves, polished concrete floor. Empty kitchen, morning light in golden shafts across the floor. The world breathes before anyone arrives.",
@@ -325,8 +352,8 @@ async function generateImage(scenePrompt, size) {
   const apiKey = document.getElementById('openai-key').value.trim();
   if (!apiKey) throw new Error('OpenAI API key required');
 
-  // Keep total prompt short — master + scene, capped at 900 chars total
-  const combined = (MASTER + ' ' + scenePrompt).substring(0, 900);
+  // Auto-inject character locks based on names detected in scene
+  const combined = buildPromptWithCharacters(scenePrompt);
 
   const res = await fetch('/.netlify/functions/generate-image', {
     method: 'POST',
