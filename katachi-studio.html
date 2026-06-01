@@ -6,3 +6,493 @@
 <title>KATACHI — Production Studio</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;--border:#2a2a2a;
+    --accent:#c8f135;--accent2:#35f1a0;--text:#e8e8e8;
+    --text-dim:#888;--text-dimmer:#555;--red:#ff4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;min-height:100vh}
+  .header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100}
+  .logo{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;letter-spacing:4px}
+  .logo span{display:block;font-size:9px;letter-spacing:6px;color:var(--text-dim);font-weight:400;margin-top:2px}
+  .badge{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-dim)}
+  .badge .dot{width:5px;height:5px;background:var(--border);border-radius:50%}
+  .reset-btn{background:none;border:1px solid var(--border);color:var(--text-dim);padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;transition:all .2s}
+  .reset-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .tabs{display:flex;border-bottom:1px solid var(--border);padding:0 32px}
+  .tab{padding:12px 20px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-dim);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .panel{display:none;padding:32px}
+  .panel.active{display:block}
+  .section{margin-bottom:28px}
+  .section-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:12px}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .input-group{display:flex;flex-direction:column;gap:6px}
+  .input-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text-dim)}
+  .input-row{display:flex;gap:8px}
+  input,textarea,select{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:4px;font-family:'Inter',sans-serif;font-size:12px;width:100%;outline:none;transition:border-color .2s}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+  input[type=password]{letter-spacing:2px}
+  .show-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);padding:10px 14px;border-radius:4px;cursor:pointer;font-size:11px;white-space:nowrap;font-family:'Space Mono',monospace;transition:all .2s}
+  .show-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .warn{color:var(--red);font-size:10px;margin-top:4px;font-family:'Space Mono',monospace}
+  .lock-box{background:var(--bg3);border:1px solid var(--accent);border-radius:6px;padding:14px}
+  .lock-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--accent);margin-bottom:8px}
+  .lock-text{font-size:11px;line-height:1.7;color:var(--text-dim);max-height:100px;overflow-y:auto}
+  .ref-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .ref-slot{aspect-ratio:1;background:var(--bg3);border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:border-color .2s}
+  .ref-slot:hover{border-color:var(--accent)}
+  .ref-slot img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+  .ref-slot .plus{color:var(--text-dimmer);font-size:22px}
+  .ref-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .ref-slot .rx{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.8);border:none;color:var(--red);cursor:pointer;border-radius:3px;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center}
+  .ref-slot:hover .rx{display:flex}
+  .opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  select{cursor:pointer}
+  .chk-group{display:flex;flex-direction:column;gap:10px;padding-top:4px}
+  .chk-row{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .chk-row input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+  .chk-row label{color:var(--text-dim);font-size:12px;cursor:pointer}
+  .scenes-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .scenes-count{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:2px}
+  .scenes-acts{display:flex;gap:8px}
+  .btn-sm{background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);padding:7px 14px;border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;transition:all .2s}
+  .btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+  .scenes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .sc{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .2s}
+  .sc:hover{border-color:#3a3a3a}
+  .sc.running{border-color:var(--accent)}
+  .sc.done{border-color:var(--accent2)}
+  .sc.error{border-color:var(--red)}
+  .sc-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--border)}
+  .sc-num{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--accent)}
+  .sc-status{font-size:10px;color:var(--text-dimmer)}
+  .sc-status.running{color:var(--accent)}
+  .sc-status.done{color:var(--accent2)}
+  .sc-status.error{color:var(--red)}
+  .sc textarea{border:none;border-radius:0;background:var(--bg2);min-height:85px;resize:none;font-size:11px;line-height:1.6;color:var(--text-dim);padding:11px 13px}
+  .sc-img{width:100%;aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .sc-img img{width:100%;height:100%;object-fit:cover}
+  .sc-img .no-img{color:var(--text-dimmer);font-size:11px;font-family:'Space Mono',monospace}
+  .sc-img .loading{position:absolute;inset:0;background:rgba(10,10,10,.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+  .spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-txt{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:1px}
+  .sc-foot{padding:9px 13px;border-top:1px solid var(--border)}
+  .run-btn{background:none;border:1px solid var(--border);color:var(--text-dim);padding:5px 11px;border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;display:flex;align-items:center;gap:5px;transition:all .2s}
+  .run-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .main-acts{display:flex;gap:12px;margin:28px 0;align-items:center}
+  .btn-primary{background:var(--accent);color:#0a0a0a;border:none;padding:12px 26px;border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px;transition:all .2s}
+  .btn-primary:hover{background:#d4ff40;transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .btn-outline{background:none;border:1px solid var(--border);color:var(--text-dim);padding:12px 22px;border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;transition:all .2s}
+  .btn-outline:hover{border-color:var(--text-dim);color:var(--text)}
+  .log-section{margin-top:28px}
+  .log-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--text-dimmer);margin-bottom:8px}
+  .log-box{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;max-height:220px;overflow-y:auto;font-family:'Space Mono',monospace;font-size:11px;line-height:2}
+  .log-line{color:var(--text-dimmer)}
+  .log-line.error{color:var(--red)}
+  .log-line.success{color:var(--accent2)}
+  .log-line.info{color:var(--accent)}
+  .dl-section{background:var(--bg2);border:1px solid var(--accent2);border-radius:8px;padding:28px;text-align:center;margin-top:28px}
+  .dl-section h3{font-family:'Space Mono',monospace;font-size:15px;color:var(--accent);margin-bottom:8px;letter-spacing:2px}
+  .dl-section p{color:var(--text-dim);margin-bottom:18px}
+  ::-webkit-scrollbar{width:4px;height:4px}
+  ::-webkit-scrollbar-track{background:var(--bg2)}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  @media(max-width:768px){.scenes-grid{grid-template-columns:1fr}.grid2,.opts-grid{grid-template-columns:1fr}.header{padding:12px 16px}.panel{padding:18px 14px}.badge{display:none}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo">KATACHI<span>PRODUCTION STUDIO</span></div>
+  <div class="badge"><span>GPT IMAGE</span><span class="dot"></span><span>ESRGAN</span><span class="dot"></span><span>SEEDANCE 2.0</span></div>
+  <button class="reset-btn" onclick="resetAll()">↺ reset</button>
+</header>
+<nav class="tabs">
+  <div class="tab active" onclick="switchTab('ep',this)">EPISODE PIPELINE</div>
+  <div class="tab" onclick="switchTab('sb',this)">STORYBOARD BUILDER</div>
+</nav>
+
+<div id="tab-ep" class="panel active">
+  <p style="color:var(--text-dim);font-size:12px;line-height:1.8;margin-bottom:24px;">
+    Describe your 12 scenes → <strong style="color:var(--text)">GPT Image</strong> generates each →
+    <strong style="color:var(--text)">ESRGAN 4×</strong> upscales → <strong style="color:var(--text)">Seedance 2.0</strong> generates video → download ZIP.
+  </p>
+
+  <div class="section">
+    <div class="section-label">01 — API KEYS</div>
+    <div class="grid2">
+      <div class="input-group">
+        <div class="input-label">OPENAI API KEY</div>
+        <div class="input-row">
+          <input type="password" id="openai-key" placeholder="sk-proj-..." />
+          <button class="show-btn" onclick="toggleKey('openai-key',this)">show</button>
+        </div>
+        <div class="warn">△ Required for image generation</div>
+      </div>
+      <div class="input-group">
+        <div class="input-label">FAL.AI API KEY — ESRGAN + SEEDANCE</div>
+        <div class="input-row">
+          <input type="password" id="fal-key" placeholder="xxxxxxxx-xxxx-..." />
+          <button class="show-btn" onclick="toggleKey('fal-key',this)">show</button>
+        </div>
+        <div class="warn">△ Required for upscaling + video</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">02 — REFERENCE IMAGES (UP TO 8)</div>
+    <div class="grid2">
+      <div class="ref-grid" id="ref-grid"></div>
+      <div>
+        <div class="section-label" style="font-size:9px;margin-bottom:10px;">03 — CONSISTENCY LOCK</div>
+        <div class="lock-box">
+          <div class="lock-label">MASTER PROMPT — AUTO-APPLIED TO EVERY SCENE</div>
+          <div class="lock-text" id="lock-display"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">04 — SETTINGS</div>
+    <div class="opts-grid">
+      <div class="input-group">
+        <div class="input-label">IMAGE SIZE</div>
+        <select id="img-size">
+          <option value="1024x1024">1024 × 1024 — Square</option>
+          <option value="1536x1024">1536 × 1024 — Widescreen</option>
+          <option value="1024x1536">1024 × 1536 — Portrait</option>
+        </select>
+      </div>
+      <div>
+        <div class="input-label" style="margin-bottom:10px;">PIPELINE OPTIONS</div>
+        <div class="chk-group">
+          <div class="chk-row"><input type="checkbox" id="opt-esrgan" checked><label for="opt-esrgan">Enable ESRGAN 4× upscaling</label></div>
+          <div class="chk-row"><input type="checkbox" id="opt-seedance"><label for="opt-seedance">Generate Seedance 2.0 videos</label></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="scenes-hdr">
+      <div class="scenes-count">05 — SCENES (12)</div>
+      <div class="scenes-acts">
+        <button class="btn-sm" onclick="loadEp2()">Load Episode 2</button>
+        <button class="btn-sm" onclick="clearScenes()">Clear All</button>
+      </div>
+    </div>
+    <div class="scenes-grid" id="scenes-grid"></div>
+  </div>
+
+  <div class="main-acts">
+    <button class="btn-outline" onclick="runImagesOnly()">Generate Images Only</button>
+    <button class="btn-primary" id="run-btn" onclick="runAll()">▶ Run Full Pipeline</button>
+  </div>
+
+  <div class="log-section">
+    <div class="log-label">LOG</div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+
+  <div class="dl-section" id="dl-section" style="display:none;">
+    <h3>✓ Pipeline Complete</h3>
+    <p>All scenes generated. Download your episode assets below.</p>
+    <button class="btn-primary" onclick="downloadAll()">↓ Download All Images</button>
+  </div>
+</div>
+
+<div id="tab-sb" class="panel">
+  <p style="color:var(--text-dim);font-size:12px;margin-bottom:24px;">Generate individual storyboard panels at full resolution.</p>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;" id="sb-grid"></div>
+  <div class="main-acts">
+    <button class="btn-primary" onclick="runAllSB()">▶ Generate All Panels</button>
+  </div>
+  <div class="log-section">
+    <div class="log-label">LOG</div>
+    <div class="log-box" id="sb-log"></div>
+  </div>
+</div>
+
+<script>
+// SHORT master prompt — under 500 chars
+const MASTER = "Studio Ghibli painterly style, warm amber-gold light. 3D sculptural characters inside painted world. Mao: silver-white hair, pale blue wrap vest, blue harem trousers, gold necklaces. Kei: greying hair, short beard, open blue linen shirt, grey trousers, Polynesian arm tattoo. Tama: bronze sphere, moth-wing rotors, amber glowing eye. Alchemy kitchen: raw concrete, open terrace, jungle waterfall, dark stone bench, warm herb shelves.";
+
+const EP2 = [
+  "Mao's Alchemy Kitchen, wide establishing shot. Raw concrete walls, open terrace facing lush jungle waterfall, dark stone bench, warm-lit herb shelves, polished concrete floor. Empty kitchen, morning light in golden shafts across the floor. The world breathes before anyone arrives.",
+  "Wide shot, open terrace edge. Small dark shape at the treeline — Tama, bronze sphere, moth-wing rotors spinning slowly, drifting from jungle canopy into open air above the terrace. Eye amber-warm. Kitchen waits behind.",
+  "Medium shot from inside looking out. Tama crosses the threshold into the kitchen interior, rotors slowing. Morning light catches the bronze surface. Concrete walls frame the entrance. Eye amber. Arrival.",
+  "Tama alone inside. Drifting slowly along the stone bench, eye yellow-curious. Scanning dried herbs, glass bottles, stone bowls. Close shot hovering before amber-lit bottles on wooden shelf, tiny reflections in bronze surface.",
+  "Wide shot from near the herb shelves. Mao enters from the far end — silver-white hair loose, pale blue wrap vest, wide pale blue trousers, gold necklaces. She hasn't seen Tama. Moving with quiet economy toward the stone bench. Morning light on her hair.",
+  "Medium shot. Mao at the bench setting out tools — stone bowls, mortar, dried herbs. Precise hands. Tama hovering still behind her, eye shifting yellow to blue. Watching without being seen. Ten feet and enormous between them.",
+  "Mao pauses at the bench. Tilts her head. She has sensed something. Hands still on stone. Tama motionless behind her, eye amber — waiting. Waterfall beyond the terrace. The moment before discovery.",
+  "Mao turns slowly, without alarm. She sees Tama. Wide shot — Mao at bench, Tama near shelves, open terrace and waterfall between them. Silver-grey eyes meeting large amber lens. The first look. Long and unhurried.",
+  "Medium shot on Mao. Expression open, unreadable — no fear, pure attention. She studies Tama like an unfamiliar plant. Patient. Gold necklaces catch the light. Silver-white hair moves in air from the terrace.",
+  "Close on Tama. Aged bronze surface, moth-wing rotors, single large eye. Eye shifts — amber to soft blue to amber. A reply without words. Tama tilts slightly toward Mao. First movement between them. Herb-shelf light warm behind.",
+  "Mao takes one slow step toward Tama. Tama holds position. Eye amber, steady. Close-medium, both in frame. Distance now intimate rather than cautious. Waterfall audible beyond. Two beings making a quiet decision.",
+  "Wide closing shot from the terrace threshold looking in. Mao at the stone bench grinding herbs. Tama hovering at her shoulder, eye amber, rotors spinning softly. They have settled. Morning light full and warm. Something has begun."
+];
+
+let refs = new Array(8).fill(null);
+let results = new Array(12).fill(null);
+let sbResults = new Array(6).fill(null);
+let running = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildRefs(); buildScenes(); buildSB();
+  document.getElementById('lock-display').textContent = MASTER;
+});
+
+function switchTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+function toggleKey(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? 'show' : 'hide';
+}
+
+function buildRefs() {
+  const g = document.getElementById('ref-grid');
+  g.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('div');
+    s.className = 'ref-slot';
+    s.innerHTML = refs[i]
+      ? `<img src="${refs[i]}"><input type="file" accept="image/*" onchange="handleRef(${i},this)"><button class="rx" onclick="removeRef(${i},event)">×</button>`
+      : `<span class="plus">+</span><input type="file" accept="image/*" onchange="handleRef(${i},this)">`;
+    g.appendChild(s);
+  }
+}
+
+function handleRef(i, input) {
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => { refs[i] = e.target.result; buildRefs(); };
+  r.readAsDataURL(f);
+}
+
+function removeRef(i, e) { e.stopPropagation(); e.preventDefault(); refs[i] = null; buildRefs(); }
+
+function buildScenes() {
+  const g = document.getElementById('scenes-grid');
+  g.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const c = document.createElement('div');
+    c.className = 'sc'; c.id = `sc-${i}`;
+    c.innerHTML = `
+      <div class="sc-hdr"><span class="sc-num">SCENE ${String(i+1).padStart(2,'0')}</span><span class="sc-status" id="ss-${i}">—</span></div>
+      <textarea id="st-${i}" placeholder="Describe scene ${i+1}..."></textarea>
+      <div class="sc-img" id="sp-${i}">${results[i]?`<img src="${results[i]}">`:'<span class="no-img">no image yet</span>'}</div>
+      <div class="sc-foot"><button class="run-btn" onclick="runScene(${i})">▶ run</button></div>`;
+    g.appendChild(c);
+  }
+}
+
+function clearScenes() {
+  for (let i = 0; i < 12; i++) { const t = document.getElementById(`st-${i}`); if (t) t.value = ''; }
+  results = new Array(12).fill(null); buildScenes();
+}
+
+function loadEp2() {
+  EP2.forEach((s,i) => { const t = document.getElementById(`st-${i}`); if (t) t.value = s; });
+  log('info','Episode 2 scenes loaded.');
+}
+
+function buildSB() {
+  const g = document.getElementById('sb-grid');
+  g.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    g.innerHTML += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      <textarea id="sbt-${i}" placeholder="Panel ${i+1}..." style="width:100%;background:var(--bg2);border:none;border-bottom:1px solid var(--border);color:var(--text-dim);padding:12px;font-size:11px;line-height:1.6;min-height:75px;resize:none;outline:none;font-family:'Inter',sans-serif;"></textarea>
+      <div id="sbp-${i}" style="width:100%;aspect-ratio:16/9;background:var(--bg3);display:flex;align-items:center;justify-content:center;"><span style="color:var(--text-dimmer);font-size:11px;font-family:'Space Mono',monospace;">no image yet</span></div>
+      <div style="padding:9px 13px;border-top:1px solid var(--border);"><button class="run-btn" onclick="runSBPanel(${i})">▶ run</button></div>
+    </div>`;
+  }
+}
+
+// API call through proxy
+async function generateImage(scenePrompt, size) {
+  const apiKey = document.getElementById('openai-key').value.trim();
+  if (!apiKey) throw new Error('OpenAI API key required');
+
+  // Keep total prompt short — master + scene, capped at 900 chars total
+  const combined = (MASTER + ' ' + scenePrompt).substring(0, 900);
+
+  const res = await fetch('/.netlify/functions/generate-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt: combined,
+      size: size || document.getElementById('img-size').value,
+      apiKey
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+  const b64 = data.data?.[0]?.b64_json;
+  const url = data.data?.[0]?.url;
+  if (!b64 && !url) throw new Error('No image in response');
+  return b64 ? `data:image/png;base64,${b64}` : url;
+}
+
+async function upscaleImage(imageUrl) {
+  const apiKey = document.getElementById('fal-key').value.trim();
+  if (!apiKey) return imageUrl;
+  const res = await fetch('/.netlify/functions/upscale-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageUrl, apiKey })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || 'Upscale failed');
+  return data.image?.url || data.output?.image?.url || imageUrl;
+}
+
+async function generateVideo(imageUrl, prompt) {
+  const apiKey = document.getElementById('fal-key').value.trim();
+  if (!apiKey) return null;
+  const res = await fetch('/.netlify/functions/generate-video', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageUrl, prompt: prompt.substring(0,200), apiKey })
+  });
+  const data = await res.json();
+  return data.video?.url || data.output?.video?.url || null;
+}
+
+async function runScene(i) {
+  const text = document.getElementById(`st-${i}`)?.value?.trim();
+  if (!text) { log('error', `Scene ${i+1}: no description.`); return; }
+
+  const card = document.getElementById(`sc-${i}`);
+  const preview = document.getElementById(`sp-${i}`);
+  const status = document.getElementById(`ss-${i}`);
+
+  card.className = 'sc running';
+  status.className = 'sc-status running'; status.textContent = 'generating...';
+  preview.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-txt">generating...</div></div>';
+
+  try {
+    log('info', `Scene ${i+1}: generating image...`);
+    let imgUrl = await generateImage(text);
+    results[i] = imgUrl;
+    let finalUrl = imgUrl;
+
+    if (document.getElementById('opt-esrgan').checked) {
+      status.textContent = 'upscaling...';
+      preview.querySelector('.loading-txt').textContent = 'upscaling 4x...';
+      log('info', `Scene ${i+1}: upscaling...`);
+      try { finalUrl = await upscaleImage(imgUrl); }
+      catch(e) { log('error', `Scene ${i+1}: upscale failed — ${e.message}`); }
+    }
+
+    preview.innerHTML = `<img src="${finalUrl}">`;
+    card.className = 'sc done';
+    status.className = 'sc-status done'; status.textContent = '✓ done';
+    log('success', `Scene ${i+1}: complete.`);
+
+    if (document.getElementById('opt-seedance').checked) {
+      status.textContent = 'video...';
+      log('info', `Scene ${i+1}: generating video...`);
+      try {
+        const v = await generateVideo(finalUrl, text);
+        if (v) log('success', `Scene ${i+1}: video → ${v}`);
+      } catch(e) { log('error', `Scene ${i+1}: video failed — ${e.message}`); }
+    }
+  } catch(e) {
+    card.className = 'sc error';
+    status.className = 'sc-status error'; status.textContent = 'failed';
+    preview.innerHTML = `<span class="no-img" style="color:var(--red)">${e.message.substring(0,80)}</span>`;
+    log('error', `Scene ${i+1}: FAILED — ${e.message}`);
+  }
+}
+
+async function runAll() {
+  if (running) return;
+  running = true;
+  document.getElementById('run-btn').disabled = true;
+  for (let i = 0; i < 12; i++) await runScene(i);
+  document.getElementById('dl-section').style.display = 'block';
+  log('info', 'Pipeline complete ✓');
+  running = false;
+  document.getElementById('run-btn').disabled = false;
+}
+
+async function runImagesOnly() {
+  const s = document.getElementById('opt-seedance').checked;
+  document.getElementById('opt-seedance').checked = false;
+  await runAll();
+  document.getElementById('opt-seedance').checked = s;
+}
+
+async function runSBPanel(i) {
+  const text = document.getElementById(`sbt-${i}`)?.value?.trim();
+  if (!text) return;
+  const p = document.getElementById(`sbp-${i}`);
+  p.innerHTML = '<div class="loading" style="position:relative;width:100%;height:120px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;"><div class="spinner"></div><div class="loading-txt">generating...</div></div>';
+  try {
+    sbLog('info', `Panel ${i+1}: generating...`);
+    const url = await generateImage(text, '1024x1024');
+    sbResults[i] = url;
+    p.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;">`;
+    sbLog('success', `Panel ${i+1}: done.`);
+  } catch(e) {
+    p.innerHTML = `<span style="color:var(--red);font-size:11px;font-family:'Space Mono',monospace;">${e.message.substring(0,60)}</span>`;
+    sbLog('error', `Panel ${i+1}: FAILED — ${e.message}`);
+  }
+}
+
+async function runAllSB() { for (let i = 0; i < 6; i++) await runSBPanel(i); }
+
+function downloadAll() {
+  results.forEach((src, i) => {
+    if (!src) return;
+    const a = document.createElement('a');
+    a.href = src; a.download = `katachi-ep2-s${String(i+1).padStart(2,'0')}.png`;
+    a.click();
+  });
+}
+
+function resetAll() {
+  if (!confirm('Reset everything?')) return;
+  refs = new Array(8).fill(null);
+  results = new Array(12).fill(null);
+  sbResults = new Array(6).fill(null);
+  document.getElementById('openai-key').value = '';
+  document.getElementById('fal-key').value = '';
+  document.getElementById('log-box').innerHTML = '';
+  document.getElementById('sb-log').innerHTML = '';
+  document.getElementById('dl-section').style.display = 'none';
+  buildRefs(); buildScenes(); buildSB();
+}
+
+function log(type, msg) {
+  const b = document.getElementById('log-box');
+  const l = document.createElement('div');
+  l.className = `log-line ${type}`;
+  l.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  b.appendChild(l); b.scrollTop = b.scrollHeight;
+}
+
+function sbLog(type, msg) {
+  const b = document.getElementById('sb-log');
+  const l = document.createElement('div');
+  l.className = `log-line ${type}`;
+  l.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  b.appendChild(l); b.scrollTop = b.scrollHeight;
+}
+</script>
+</body>
+</html>
