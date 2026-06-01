@@ -114,6 +114,7 @@
 <nav class="tabs">
   <div class="tab active" onclick="switchTab('ep',this)">EPISODE PIPELINE</div>
   <div class="tab" onclick="switchTab('sb',this)">STORYBOARD BUILDER</div>
+  <div class="tab" onclick="switchTab('prep',this)">PREP REFERENCES</div>
 </nav>
 
 <div id="tab-ep" class="panel active">
@@ -218,6 +219,51 @@
   <div class="log-section">
     <div class="log-label">LOG</div>
     <div class="log-box" id="sb-log"></div>
+  </div>
+</div>
+
+
+<div id="tab-prep" class="panel">
+  <p style="color:var(--text-dim);font-size:12px;line-height:1.8;margin-bottom:8px;">
+    Drag in any image — any size, any format. The engine auto-resizes and compresses to exact gpt-image-1 spec
+    then outputs a clean ready-to-use PNG. Shortest side minimum <strong style="color:var(--text)">512px</strong>,
+    longest side maximum <strong style="color:var(--text)">2048px</strong>, file size under <strong style="color:var(--text)">4MB</strong>.
+  </p>
+  <p style="color:var(--text-dimmer);font-size:11px;margin-bottom:28px;font-family:'Space Mono',monospace;">
+    FUTURE: Agent pipeline will auto-process and push directly to episode reference slots.
+  </p>
+
+  <div class="section">
+    <div class="section-label">DROP IMAGES TO PREP</div>
+    <div id="prep-dropzone" style="
+      border: 2px dashed var(--border); border-radius: 8px; padding: 40px 20px;
+      text-align: center; cursor: pointer; transition: all .2s; margin-bottom: 24px;
+      background: var(--bg2);"
+      ondragover="prepDragOver(event)" ondragleave="prepDragLeave(event)" ondrop="prepDrop(event)"
+      onclick="document.getElementById('prep-file-input').click()">
+      <div style="font-size:32px;margin-bottom:12px;">📁</div>
+      <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:1px;">
+        DRAG IMAGES HERE OR CLICK TO SELECT
+      </div>
+      <div style="font-size:10px;color:var(--text-dimmer);margin-top:8px;">
+        JPG · PNG · WEBP · any size · multiple files supported
+      </div>
+      <input type="file" id="prep-file-input" accept="image/*" multiple style="display:none"
+        onchange="prepHandleFiles(this.files)">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">PROCESSED IMAGES</div>
+    <div id="prep-results" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;"></div>
+    <div id="prep-empty" style="color:var(--text-dimmer);font-family:'Space Mono',monospace;font-size:11px;padding:20px 0;">
+      No images processed yet — drop some above.
+    </div>
+  </div>
+
+  <div class="main-acts" id="prep-actions" style="display:none;">
+    <button class="btn-primary" onclick="prepDownloadAll()">↓ Download All Prepped Images</button>
+    <button class="btn-outline" onclick="prepClearAll()">Clear All</button>
   </div>
 </div>
 
@@ -520,6 +566,156 @@ function sbLog(type, msg) {
   l.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
   b.appendChild(l); b.scrollTop = b.scrollHeight;
 }
+
+// ── PREP REFERENCES ENGINE ──────────────────────────────────────
+// Specs: min 512px short side, max 2048px long side, max 4MB output
+
+const PREP_MIN = 512;
+const PREP_MAX = 2048;
+const PREP_MAX_BYTES = 4 * 1024 * 1024; // 4MB
+
+let preppedImages = [];
+
+function prepDragOver(e) {
+  e.preventDefault();
+  document.getElementById('prep-dropzone').style.borderColor = 'var(--accent)';
+  document.getElementById('prep-dropzone').style.background = 'var(--bg3)';
+}
+
+function prepDragLeave(e) {
+  document.getElementById('prep-dropzone').style.borderColor = 'var(--border)';
+  document.getElementById('prep-dropzone').style.background = 'var(--bg2)';
+}
+
+function prepDrop(e) {
+  e.preventDefault();
+  prepDragLeave(e);
+  prepHandleFiles(e.dataTransfer.files);
+}
+
+function prepHandleFiles(files) {
+  Array.from(files).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => prepProcessImage(e.target.result, file.name);
+    reader.readAsDataURL(file);
+  });
+}
+
+function prepProcessImage(dataUrl, filename) {
+  const img = new Image();
+  img.onload = () => {
+    const origW = img.width;
+    const origH = img.height;
+
+    // Calculate target dimensions
+    let w = origW, h = origH;
+    const shortSide = Math.min(w, h);
+    const longSide = Math.max(w, h);
+
+    // Scale up if too small
+    if (shortSide < PREP_MIN) {
+      const scale = PREP_MIN / shortSide;
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+
+    // Scale down if too large
+    const newLong = Math.max(w, h);
+    if (newLong > PREP_MAX) {
+      const scale = PREP_MAX / newLong;
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+
+    // Draw to canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    // Compress — try quality 0.9 first, reduce if over 4MB
+    let quality = 0.9;
+    let output = canvas.toDataURL('image/jpeg', quality);
+    while (output.length * 0.75 > PREP_MAX_BYTES && quality > 0.5) {
+      quality -= 0.05;
+      output = canvas.toDataURL('image/jpeg', quality);
+    }
+
+    const fileSizeKB = Math.round(output.length * 0.75 / 1024);
+    const baseName = filename.replace(/\.[^.]+$/, '');
+
+    preppedImages.push({ dataUrl: output, filename: baseName + '_prepped.jpg', w, h, origW, origH, fileSizeKB });
+    renderPrepResults();
+  };
+  img.src = dataUrl;
+}
+
+function renderPrepResults() {
+  const grid = document.getElementById('prep-results');
+  const empty = document.getElementById('prep-empty');
+  const actions = document.getElementById('prep-actions');
+
+  if (preppedImages.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    actions.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  actions.style.display = 'flex';
+
+  grid.innerHTML = preppedImages.map((img, i) => `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      <div style="position:relative;">
+        <img src="${img.dataUrl}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
+        <button onclick="prepRemove(${i})" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.8);border:1px solid var(--border);color:var(--red);cursor:pointer;border-radius:4px;width:24px;height:24px;font-size:14px;display:flex;align-items:center;justify-content:center;">×</button>
+      </div>
+      <div style="padding:10px 12px;">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);margin-bottom:4px;letter-spacing:1px;">✓ READY</div>
+        <div style="font-size:10px;color:var(--text-dim);">
+          ${img.w} × ${img.h}px · ${img.fileSizeKB}KB
+        </div>
+        <div style="font-size:9px;color:var(--text-dimmer);margin-top:2px;">
+          was ${img.origW} × ${img.origH}px
+        </div>
+        <button onclick="prepDownloadOne(${i})" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;width:100%;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">↓ download</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function prepRemove(i) {
+  preppedImages.splice(i, 1);
+  renderPrepResults();
+}
+
+function prepDownloadOne(i) {
+  const img = preppedImages[i];
+  const a = document.createElement('a');
+  a.href = img.dataUrl;
+  a.download = img.filename;
+  a.click();
+}
+
+function prepDownloadAll() {
+  preppedImages.forEach((img, i) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = img.dataUrl;
+      a.download = img.filename;
+      a.click();
+    }, i * 300);
+  });
+}
+
+function prepClearAll() {
+  preppedImages = [];
+  renderPrepResults();
+}
+
 </script>
 </body>
 </html>
