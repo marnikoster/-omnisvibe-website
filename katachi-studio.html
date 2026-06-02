@@ -407,22 +407,47 @@ async function generateImage(scenePrompt, size) {
   if (imageSize === '1536x1024' || imageSize === '16:9') resolvedSize = '1536x1024';
   if (imageSize === '1024x1536' || imageSize === '9:16') resolvedSize = '1024x1536';
 
-  const res = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-image-2',
-      prompt: combined.substring(0, 3800),
-      n: 1,
-      size: resolvedSize
-    })
-  });
+  // Build request — use edits endpoint if reference images are loaded
+  const activeRefs = refs.filter(r => r !== null);
+  
+  let data;
+  if (activeRefs.length > 0) {
+    // Use multipart/form-data with reference images via edits endpoint
+    const formData = new FormData();
+    formData.append('model', 'gpt-image-2');
+    formData.append('prompt', combined.substring(0, 3800));
+    formData.append('n', '1');
+    formData.append('size', resolvedSize);
+    
+    // Attach up to 4 reference images (API limit)
+    const refsToSend = activeRefs.slice(0, 4);
+    for (let ri = 0; ri < refsToSend.length; ri++) {
+      const b64Data = refsToSend[ri].split(',')[1];
+      const mimeType = refsToSend[ri].split(';')[0].split(':')[1];
+      const byteChars = atob(b64Data);
+      const byteArr = new Uint8Array(byteChars.length);
+      for (let bi = 0; bi < byteChars.length; bi++) byteArr[bi] = byteChars.charCodeAt(bi);
+      const blob = new Blob([byteArr], { type: mimeType });
+      formData.append('image[]', blob, `ref${ri}.png`);
+    }
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || data?.error?.code || `HTTP ${res.status}`);
+    const res = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+      body: formData
+    });
+    data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || data?.error?.code || `HTTP ${res.status}`);
+  } else {
+    // No refs — use generations endpoint
+    const res = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: 'gpt-image-2', prompt: combined.substring(0, 3800), n: 1, size: resolvedSize })
+    });
+    data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || data?.error?.code || `HTTP ${res.status}`);
+  }
 
   const b64 = data.data?.[0]?.b64_json;
   const url = data.data?.[0]?.url;
