@@ -22,14 +22,16 @@ exports.handler = async function(event) {
       token: process.env.NETLIFY_AUTH_TOKEN
     });
 
-    const job = await store.get(jobId, { type: 'json' });
-    if (!job) {
+    const raw = await store.get(jobId);
+    if (!raw) {
       return { statusCode: 404, headers, body: JSON.stringify({ error: 'job not found' }) };
     }
 
+    const job = JSON.parse(raw);
     return { statusCode: 200, headers, body: JSON.stringify(job) };
 
   } catch (err) {
+    console.error('GET JOB ERROR:', err.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
