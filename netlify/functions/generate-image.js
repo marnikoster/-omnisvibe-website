@@ -24,22 +24,22 @@ exports.handler = async function(event) {
 
     const safePrompt = prompt.substring(0, 3800);
 
-    // Parse size — Grok Aurora uses width/height separately
-    // Default 1024x1024, support 1536x1024 widescreen
-    let width = 1024, height = 1024;
-    if (size === '1536x1024') { width = 1536; height = 1024; }
-    if (size === '1024x1536') { width = 1024; height = 1536; }
+    // gpt-image-2 size options
+    let imageSize = '1024x1024';
+    if (size === '1536x1024') imageSize = '1536x1024';
+    if (size === '1024x1536') imageSize = '1024x1536';
 
     const payload = JSON.stringify({
-      model: 'grok-imagine-image-quality',
+      model: 'gpt-image-2',
       prompt: safePrompt,
       n: 1,
+      size: imageSize,
       response_format: 'b64_json'
     });
 
     const result = await new Promise((resolve, reject) => {
       const req = https.request({
-        hostname: 'api.x.ai',
+        hostname: 'api.openai.com',
         path: '/v1/images/generations',
         method: 'POST',
         headers: {
