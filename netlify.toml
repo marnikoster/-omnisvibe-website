@@ -4,6 +4,9 @@
 [functions]
   timeout = 26
 
+[functions."generate-image"]
+  timeout = 26
+
 [[headers]]
   for = "/*"
   [headers.values]
