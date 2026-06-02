@@ -312,6 +312,7 @@ const EP2 = [
 ];
 
 let refs = new Array(8).fill(null);
+let episodeChain = []; // stores output frames for sequential chaining
 let results = new Array(12).fill(null);
 let sbResults = new Array(6).fill(null);
 let running = false;
@@ -407,8 +408,11 @@ async function generateImage(scenePrompt, size) {
   if (imageSize === '1536x1024' || imageSize === '16:9') resolvedSize = '1536x1024';
   if (imageSize === '1024x1536' || imageSize === '9:16') resolvedSize = '1024x1536';
 
-  // Build request — use edits endpoint if reference images are loaded
-  const activeRefs = refs.filter(r => r !== null);
+  // Build request — use edits endpoint with refs + chain frames for consistency
+  const moodRefs = refs.filter(r => r !== null);
+  // Add last 2 generated frames from this episode run for visual chaining
+  const chainRefs = episodeChain.slice(-2);
+  const activeRefs = [...moodRefs, ...chainRefs].slice(0, 4); // max 4 total
   
   let data;
   if (activeRefs.length > 0) {
@@ -496,6 +500,7 @@ async function runScene(i) {
     log('info', `Scene ${i+1}: generating image...`);
     let imgUrl = await generateImage(text);
     results[i] = imgUrl;
+    episodeChain.push(imgUrl); // chain this frame for next scene consistency
     let finalUrl = imgUrl;
 
     if (document.getElementById('opt-esrgan').checked) {
@@ -530,6 +535,7 @@ async function runScene(i) {
 async function runAll() {
   if (running) return;
   running = true;
+  episodeChain = []; // reset chain for fresh episode run
   document.getElementById('run-btn').disabled = true;
   for (let i = 0; i < 12; i++) await runScene(i);
   document.getElementById('dl-section').style.display = 'block';
