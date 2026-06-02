@@ -15,31 +15,31 @@ exports.handler = async function(event) {
 
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json'
   };
 
   try {
-    const body = JSON.parse(event.body);
-    const { prompt, size, apiKey } = body;
+    const { prompt, size, apiKey } = JSON.parse(event.body);
+    if (!prompt || !apiKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'prompt and apiKey required' }) };
 
-    if (!prompt) return { statusCode: 400, headers, body: JSON.stringify({ error: 'prompt required' }) };
-    if (!apiKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'apiKey required' }) };
-
-    // Truncate prompt to 3800 chars to stay within API limits
     const safePrompt = prompt.substring(0, 3800);
 
+    // Parse size — Grok Aurora uses width/height separately
+    // Default 1024x1024, support 1536x1024 widescreen
+    let width = 1024, height = 1024;
+    if (size === '1536x1024') { width = 1536; height = 1024; }
+    if (size === '1024x1536') { width = 1024; height = 1536; }
+
     const payload = JSON.stringify({
-      model: 'gpt-image-1',
+      model: 'aurora',
       prompt: safePrompt,
       n: 1,
-      size: size || '1024x1024',
-      quality: 'auto'
+      response_format: 'b64_json'
     });
 
     const result = await new Promise((resolve, reject) => {
       const req = https.request({
-        hostname: 'api.openai.com',
+        hostname: 'api.x.ai',
         path: '/v1/images/generations',
         method: 'POST',
         headers: {
@@ -57,33 +57,18 @@ exports.handler = async function(event) {
       req.end();
     });
 
-    // Surface clean error message
     if (result.status !== 200) {
       let errMsg = `HTTP ${result.status}`;
       try {
-        const parsed = JSON.parse(result.body);
-        errMsg = parsed?.error?.message || parsed?.error?.code || result.body.substring(0, 200);
-      } catch(e) {
-        errMsg = result.body.substring(0, 200);
-      }
-      return {
-        statusCode: result.status,
-        headers,
-        body: JSON.stringify({ error: errMsg })
-      };
+        const p = JSON.parse(result.body);
+        errMsg = p.error?.message || p.error?.code || p.message || result.body.substring(0, 300);
+      } catch(e) { errMsg = result.body.substring(0, 300); }
+      return { statusCode: result.status, headers, body: JSON.stringify({ error: errMsg }) };
     }
 
-    return {
-      statusCode: 200,
-      headers,
-      body: result.body
-    };
+    return { statusCode: 200, headers, body: result.body };
 
   } catch (err) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: err.message || String(err) })
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
