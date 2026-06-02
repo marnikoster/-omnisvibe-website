@@ -1,19 +1,26 @@
 const { getStore } = require('@netlify/blobs');
 const https = require('https');
 
+const getBlobStore = () => getStore({
+  name: 'katachi-jobs',
+  siteID: process.env.NETLIFY_SITE_ID,
+  token: process.env.NETLIFY_AUTH_TOKEN
+});
+
+const blobSet = async (store, key, data) => {
+  await store.set(key, JSON.stringify(data), {
+    metadata: { contentType: 'application/json' }
+  });
+};
+
 exports.handler = async function(event) {
   let jobId;
   try {
     const { jobId: jid, prompt, size, apiKey, refs } = JSON.parse(event.body);
     jobId = jid;
 
-    const store = getStore({
-      name: 'katachi-jobs',
-      siteID: process.env.NETLIFY_SITE_ID,
-      token: process.env.NETLIFY_AUTH_TOKEN
-    });
-
-    await store.setJSON(jobId, { status: 'processing', startedAt: Date.now() });
+    const store = getBlobStore();
+    await blobSet(store, jobId, { status: 'processing', startedAt: Date.now() });
 
     const safePrompt = prompt.substring(0, 3800);
     let imageSize = '1024x1024';
@@ -64,13 +71,13 @@ exports.handler = async function(event) {
     const parsed = JSON.parse(result.body);
     if (result.status !== 200) {
       const errMsg = parsed?.error?.message || parsed?.error?.code || `HTTP ${result.status}`;
-      await store.setJSON(jobId, { status: 'error', error: errMsg, completedAt: Date.now() });
+      await blobSet(store, jobId, { status: 'error', error: errMsg, completedAt: Date.now() });
       return { statusCode: 200, body: 'error stored' };
     }
 
     const b64 = parsed.data?.[0]?.b64_json;
     const url = parsed.data?.[0]?.url;
-    await store.setJSON(jobId, {
+    await blobSet(store, jobId, {
       status: 'done',
       imageUrl: b64 ? `data:image/png;base64,${b64}` : url,
       completedAt: Date.now()
@@ -79,11 +86,12 @@ exports.handler = async function(event) {
     return { statusCode: 200, body: 'done' };
 
   } catch (err) {
+    console.error('BACKGROUND ERROR:', err.message, err.stack);
     if (jobId) {
       try {
-        const store = getStore({ name: 'katachi-jobs', siteID: process.env.NETLIFY_SITE_ID, token: process.env.NETLIFY_AUTH_TOKEN });
-        await store.setJSON(jobId, { status: 'error', error: err.message, completedAt: Date.now() });
-      } catch(e) {}
+        const store = getBlobStore();
+        await blobSet(store, jobId, { status: 'error', error: err.message, completedAt: Date.now() });
+      } catch(e) { console.error('Failed to store error state:', e.message); }
     }
     return { statusCode: 500, body: err.message };
   }
