@@ -8,19 +8,20 @@ const getBlobStore = () => getStore({
 });
 
 const blobSet = async (store, key, data) => {
-  await store.set(key, JSON.stringify(data), {
+  await store.set(key, JSON.stringify({ ...data, updatedAt: new Date().toISOString() }), {
     metadata: { contentType: 'application/json' }
   });
 };
 
 exports.handler = async function(event) {
-  let jobId;
+  let jobId, store;
   try {
     const { jobId: jid, prompt, size, apiKey, refs } = JSON.parse(event.body);
     jobId = jid;
+    store = getBlobStore();
 
-    const store = getBlobStore();
-    await blobSet(store, jobId, { status: 'processing', startedAt: Date.now() });
+    console.log('Background job started:', jobId);
+    await blobSet(store, jobId, { status: 'processing', stage: 'started' });
 
     const safePrompt = prompt.substring(0, 3800);
     let imageSize = '1024x1024';
@@ -28,6 +29,10 @@ exports.handler = async function(event) {
     if (size === '1024x1536' || size === '9:16') imageSize = '1024x1536';
 
     const activeRefs = Array.isArray(refs) ? refs.filter(Boolean).slice(0, 2) : [];
+
+    await blobSet(store, jobId, { status: 'processing', stage: 'calling_openai', refCount: activeRefs.length });
+    console.log('Calling OpenAI, refs:', activeRefs.length, 'size:', imageSize);
+
     let result;
 
     if (activeRefs.length > 0) {
@@ -50,6 +55,7 @@ exports.handler = async function(event) {
       parts.push(Buffer.from(`--${boundary}--\r\n`, 'utf8'));
       const body = Buffer.concat(parts);
 
+      console.log('Sending edits request, body size:', body.length);
       result = await new Promise((resolve, reject) => {
         const req = https.request({
           hostname: 'api.openai.com', path: '/v1/images/edits', method: 'POST',
@@ -59,6 +65,7 @@ exports.handler = async function(event) {
       });
     } else {
       const payload = JSON.stringify({ model: 'gpt-image-2', prompt: safePrompt, n: 1, size: imageSize });
+      console.log('Sending generations request');
       result = await new Promise((resolve, reject) => {
         const req = https.request({
           hostname: 'api.openai.com', path: '/v1/images/generations', method: 'POST',
@@ -68,30 +75,38 @@ exports.handler = async function(event) {
       });
     }
 
+    console.log('OpenAI responded with status:', result.status);
+    await blobSet(store, jobId, { status: 'processing', stage: 'openai_responded', httpStatus: result.status });
+
     const parsed = JSON.parse(result.body);
     if (result.status !== 200) {
       const errMsg = parsed?.error?.message || parsed?.error?.code || `HTTP ${result.status}`;
-      await blobSet(store, jobId, { status: 'error', error: errMsg, completedAt: Date.now() });
+      console.error('OpenAI error:', errMsg);
+      await blobSet(store, jobId, { status: 'failed', error: errMsg });
       return { statusCode: 200, body: 'error stored' };
     }
 
     const b64 = parsed.data?.[0]?.b64_json;
     const url = parsed.data?.[0]?.url;
-    await blobSet(store, jobId, {
-      status: 'done',
-      imageUrl: b64 ? `data:image/png;base64,${b64}` : url,
-      completedAt: Date.now()
-    });
+    const imageUrl = b64 ? `data:image/png;base64,${b64}` : url;
+
+    if (!imageUrl) {
+      await blobSet(store, jobId, { status: 'failed', error: 'No image in OpenAI response' });
+      return { statusCode: 200, body: 'no image' };
+    }
+
+    console.log('Image ready, storing result');
+    await blobSet(store, jobId, { status: 'done', imageUrl });
+    console.log('Job complete:', jobId);
 
     return { statusCode: 200, body: 'done' };
 
   } catch (err) {
-    console.error('BACKGROUND ERROR:', err.message, err.stack);
-    if (jobId) {
+    console.error('BACKGROUND FATAL ERROR:', err.message, err.stack);
+    if (jobId && store) {
       try {
-        const store = getBlobStore();
-        await blobSet(store, jobId, { status: 'error', error: err.message, completedAt: Date.now() });
-      } catch(e) { console.error('Failed to store error state:', e.message); }
+        await blobSet(store, jobId, { status: 'failed', error: err.message });
+      } catch(e) { console.error('Failed to store error:', e.message); }
     }
     return { statusCode: 500, body: err.message };
   }
