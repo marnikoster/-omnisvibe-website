@@ -433,28 +433,44 @@ async function generateImage(scenePrompt, size) {
   if (imageSize === '1536x1024' || imageSize === '16:9') resolvedSize = '1536x1024';
   if (imageSize === '1024x1536' || imageSize === '9:16') resolvedSize = '1024x1536';
 
-  // Build request — route through Netlify
-  // Compress mood board refs to small size before sending to stay under 6MB limit
-  const moodRefs = refs.filter(r => r !== null).slice(0, 2); // max 2 mood refs
+  // Job-based polling system — no timeout possible
+  const moodRefs = refs.filter(r => r !== null).slice(0, 2);
   const compressedRefs = await Promise.all(moodRefs.map(r => compressImage(r, 512)));
 
-  const res = await fetch('/.netlify/functions/generate-image', {
+  // Step 1: Start the job
+  const startRes = await fetch('/.netlify/functions/start-image-job', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       prompt: combined.substring(0, 3800),
       size: resolvedSize,
-      apiKey
+      apiKey,
+      refs: compressedRefs.length > 0 ? compressedRefs : undefined
     })
   });
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  const startData = await startRes.json();
+  if (!startRes.ok) throw new Error(startData?.error || `HTTP ${startRes.status}`);
+  const jobId = startData.jobId;
+  if (!jobId) throw new Error('No jobId returned');
 
-  const b64 = data.data?.[0]?.b64_json;
-  const url = data.data?.[0]?.url;
-  if (!b64 && !url) throw new Error('No image in response');
-  return b64 ? `data:image/png;base64,${b64}` : url;
+  // Step 2: Poll until done (max 3 minutes)
+  const maxAttempts = 60;
+  const pollInterval = 3000;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    await new Promise(r => setTimeout(r, pollInterval));
+    const pollRes = await fetch(`/.netlify/functions/get-image-job?jobId=${jobId}`);
+    const job = await pollRes.json();
+    if (job.status === 'done') {
+      if (!job.imageUrl) throw new Error('Job done but no image URL');
+      return job.imageUrl;
+    }
+    if (job.status === 'error') {
+      throw new Error(job.error || 'Image generation failed');
+    }
+    // still pending/processing — keep polling
+  }
+  throw new Error('Image generation timed out after 3 minutes');
 }
 
 async function upscaleImage(imageUrl) {
