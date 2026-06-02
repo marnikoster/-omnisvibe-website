@@ -455,7 +455,7 @@ async function generateImage(scenePrompt, size) {
   if (!jobId) throw new Error('No jobId returned');
 
   // Step 2: Poll until done (max 3 minutes)
-  const maxAttempts = 60;
+  const maxAttempts = 160; // 8 minutes at 3s intervals
   const pollInterval = 3000;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise(r => setTimeout(r, pollInterval));
@@ -465,9 +465,11 @@ async function generateImage(scenePrompt, size) {
       if (!job.imageUrl) throw new Error('Job done but no image URL');
       return job.imageUrl;
     }
-    if (job.status === 'error') {
+    if (job.status === 'error' || job.status === 'failed') {
       throw new Error(job.error || 'Image generation failed');
     }
+    // log current stage for debugging
+    if (job.stage) console.log(`Job ${jobId} stage:`, job.stage);
     // still pending/processing — keep polling
   }
   throw new Error('Image generation timed out after 3 minutes');
