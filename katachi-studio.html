@@ -401,18 +401,28 @@ async function generateImage(scenePrompt, size) {
   // Auto-inject character locks based on names detected in scene
   const combined = buildPromptWithCharacters(scenePrompt);
 
-  const res = await fetch('/.netlify/functions/generate-image', {
+  // Call OpenAI directly — no Netlify timeout
+  const imageSize = (size || document.getElementById('img-size').value);
+  let resolvedSize = '1024x1024';
+  if (imageSize === '1536x1024' || imageSize === '16:9') resolvedSize = '1536x1024';
+  if (imageSize === '1024x1536' || imageSize === '9:16') resolvedSize = '1024x1536';
+
+  const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
     body: JSON.stringify({
-      prompt: combined,
-      size: size || document.getElementById('img-size').value,
-      apiKey
+      model: 'gpt-image-2',
+      prompt: combined.substring(0, 3800),
+      n: 1,
+      size: resolvedSize
     })
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  if (!res.ok) throw new Error(data?.error?.message || data?.error?.code || `HTTP ${res.status}`);
 
   const b64 = data.data?.[0]?.b64_json;
   const url = data.data?.[0]?.url;
