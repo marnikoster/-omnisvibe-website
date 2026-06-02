@@ -1,19 +1,16 @@
+const { getStore } = require('@netlify/blobs');
 const https = require('https');
 
-// Netlify Background Function — runs up to 15 minutes
-exports.handler = async function(event, context) {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Content-Type': 'application/json'
-  };
-
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
-
+exports.handler = async function(event) {
+  let jobId;
   try {
-    const { prompt, size, apiKey, refs } = JSON.parse(event.body);
-    if (!prompt || !apiKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'prompt and apiKey required' }) };
+    const { jobId: jid, prompt, size, apiKey, refs } = JSON.parse(event.body);
+    jobId = jid;
+
+    const store = getStore({ name: 'katachi-jobs', consistency: 'strong' });
+
+    // Mark as processing
+    await store.setJSON(jobId, { status: 'processing', startedAt: Date.now() });
 
     const safePrompt = prompt.substring(0, 3800);
     let imageSize = '1024x1024';
@@ -21,8 +18,10 @@ exports.handler = async function(event, context) {
     if (size === '1024x1536' || size === '9:16') imageSize = '1024x1536';
 
     const activeRefs = Array.isArray(refs) ? refs.filter(Boolean).slice(0, 2) : [];
+    let result;
 
     if (activeRefs.length > 0) {
+      // Use edits endpoint with reference images
       const boundary = '----KatachiFormBoundary' + Date.now();
       const parts = [];
 
@@ -48,7 +47,7 @@ exports.handler = async function(event, context) {
       parts.push(Buffer.from(`--${boundary}--\r\n`, 'utf8'));
       const body = Buffer.concat(parts);
 
-      const result = await new Promise((resolve, reject) => {
+      result = await new Promise((resolve, reject) => {
         const req = https.request({
           hostname: 'api.openai.com',
           path: '/v1/images/edits',
@@ -68,16 +67,10 @@ exports.handler = async function(event, context) {
         req.end();
       });
 
-      if (result.status !== 200) {
-        let errMsg = `HTTP ${result.status}`;
-        try { const p = JSON.parse(result.body); errMsg = p.error?.message || p.error?.code || result.body.substring(0, 300); } catch(e) {}
-        return { statusCode: result.status, headers, body: JSON.stringify({ error: errMsg }) };
-      }
-      return { statusCode: 200, headers, body: result.body };
-
     } else {
+      // No refs — use generations endpoint
       const payload = JSON.stringify({ model: 'gpt-image-2', prompt: safePrompt, n: 1, size: imageSize });
-      const result = await new Promise((resolve, reject) => {
+      result = await new Promise((resolve, reject) => {
         const req = https.request({
           hostname: 'api.openai.com',
           path: '/v1/images/generations',
@@ -96,16 +89,35 @@ exports.handler = async function(event, context) {
         req.write(payload);
         req.end();
       });
-
-      if (result.status !== 200) {
-        let errMsg = `HTTP ${result.status}`;
-        try { const p = JSON.parse(result.body); errMsg = p.error?.message || p.error?.code || result.body.substring(0, 300); } catch(e) {}
-        return { statusCode: result.status, headers, body: JSON.stringify({ error: errMsg }) };
-      }
-      return { statusCode: 200, headers, body: result.body };
     }
 
+    const parsed = JSON.parse(result.body);
+
+    if (result.status !== 200) {
+      const errMsg = parsed?.error?.message || parsed?.error?.code || `HTTP ${result.status}`;
+      await store.setJSON(jobId, { status: 'error', error: errMsg, completedAt: Date.now() });
+      return { statusCode: 200, body: 'error stored' };
+    }
+
+    const b64 = parsed.data?.[0]?.b64_json;
+    const url = parsed.data?.[0]?.url;
+    const imageData = b64 ? `data:image/png;base64,${b64}` : url;
+
+    await store.setJSON(jobId, {
+      status: 'done',
+      imageUrl: imageData,
+      completedAt: Date.now()
+    });
+
+    return { statusCode: 200, body: 'done' };
+
   } catch (err) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+    if (jobId) {
+      try {
+        const store = getStore({ name: 'katachi-jobs', consistency: 'strong' });
+        await store.setJSON(jobId, { status: 'error', error: err.message, completedAt: Date.now() });
+      } catch(e) {}
+    }
+    return { statusCode: 500, body: err.message };
   }
 };
