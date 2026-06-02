@@ -402,6 +402,24 @@ function buildSB() {
 }
 
 // API call through proxy
+// Compress image to max dimension for Netlify payload size limit
+async function compressImage(dataUrl, maxDim) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 async function generateImage(scenePrompt, size) {
   const apiKey = document.getElementById('openai-key').value.trim();
   if (!apiKey) throw new Error('OpenAI API key required');
@@ -415,10 +433,10 @@ async function generateImage(scenePrompt, size) {
   if (imageSize === '1536x1024' || imageSize === '16:9') resolvedSize = '1536x1024';
   if (imageSize === '1024x1536' || imageSize === '9:16') resolvedSize = '1024x1536';
 
-  // Build request — route through Netlify to avoid CORS, send refs as base64 in JSON
-  const moodRefs = refs.filter(r => r !== null);
-  const chainRefs = episodeChain.slice(-2);
-  const activeRefs = [...moodRefs, ...chainRefs].slice(0, 4);
+  // Build request — route through Netlify
+  // Compress mood board refs to small size before sending to stay under 6MB limit
+  const moodRefs = refs.filter(r => r !== null).slice(0, 2); // max 2 mood refs
+  const compressedRefs = await Promise.all(moodRefs.map(r => compressImage(r, 512)));
 
   const res = await fetch('/.netlify/functions/generate-image', {
     method: 'POST',
@@ -427,7 +445,7 @@ async function generateImage(scenePrompt, size) {
       prompt: combined.substring(0, 3800),
       size: resolvedSize,
       apiKey,
-      refs: activeRefs.length > 0 ? activeRefs : undefined
+      refs: compressedRefs.length > 0 ? compressedRefs : undefined
     })
   });
 
