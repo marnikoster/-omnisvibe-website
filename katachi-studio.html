@@ -73,7 +73,12 @@
   .sc-status.done{color:var(--accent2)}
   .sc-status.error{color:var(--red)}
   .sc textarea{border:none;border-radius:0;background:var(--bg2);min-height:85px;resize:none;font-size:11px;line-height:1.6;color:var(--text-dim);padding:11px 13px}
-  .sc-img{width:100%;aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .sc-img{width:100%;aspect-ratio:16/9;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .sc-vid-slot{width:100%;aspect-ratio:16/9;background:#0d0d0d;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border-top:1px solid var(--border)}
+  .sc-vid-slot video{width:100%;height:100%;object-fit:cover}
+  .vid-btn{background:transparent;border:1px solid #555;color:#888;font-size:10px;font-family:"Space Mono",monospace;padding:5px 12px;border-radius:4px;cursor:pointer;transition:all .2s}
+  .vid-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .vid-btn:disabled{opacity:0.3;cursor:not-allowed}
   .sc-img img{width:100%;height:100%;object-fit:cover}
   .sc-img .no-img{color:var(--text-dimmer);font-size:11px;font-family:'Space Mono',monospace}
   .sc-img .loading{position:absolute;inset:0;background:rgba(10,10,10,.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
@@ -314,6 +319,7 @@ const EP2 = [
 let refs = new Array(8).fill(null);
 let episodeChain = []; // stores output frames for sequential chaining
 let results = new Array(12).fill(null);
+let videoResults = new Array(12).fill(null);
 let sbResults = new Array(6).fill(null);
 let running = false;
 
@@ -367,7 +373,8 @@ function buildScenes() {
       <div class="sc-hdr"><span class="sc-num">SCENE ${String(i+1).padStart(2,'0')}</span><span class="sc-status" id="ss-${i}">—</span></div>
       <textarea id="st-${i}" placeholder="Describe scene ${i+1}..."></textarea>
       <div class="sc-img" id="sp-${i}">${results[i]?`<img src="${results[i]}">`:'<span class="no-img">no image yet</span>'}</div>
-      <div class="sc-foot"><button class="run-btn" onclick="runScene(${i})">▶ run</button></div>`;
+      <div class="sc-vid-slot" id="svp-${i}"><span style="color:var(--text-dimmer);font-size:10px;font-family:'Space Mono',monospace;">generate image first</span></div>
+      <div class="sc-foot"><button class="run-btn" onclick="runScene(${i})">▶ run image</button></div>`;
     g.appendChild(c);
   }
 }
@@ -484,6 +491,29 @@ async function generateVideo(imageUrl, prompt) {
   return data.video?.url || data.output?.video?.url || null;
 }
 
+async function runVideoScene(i) {
+  const text = document.getElementById(`st-${i}`)?.value?.trim();
+  const imgUrl = results[i];
+  if (!imgUrl) { log('error', `Scene ${i+1}: no image yet — run image first.`); return; }
+  const svp = document.getElementById(`svp-${i}`);
+  if (svp) svp.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><div class="spinner" style="width:16px;height:16px;border-width:2px;"></div><span style="color:var(--accent);font-size:10px;font-family:\'Space Mono\',monospace;">generating video...</span></div>';
+  log('info', `Scene ${i+1}: generating video...`);
+  try {
+    const videoUrl = await generateVideo(imgUrl, text || '');
+    if (videoUrl) {
+      videoResults[i] = videoUrl;
+      if (svp) svp.innerHTML = `<video src="${videoUrl}" controls style="width:100%;height:100%;object-fit:cover;"></video>`;
+      log('success', `Scene ${i+1}: video complete.`);
+    } else {
+      if (svp) svp.innerHTML = '<span style="color:var(--text-dimmer);font-size:10px;font-family:\'Space Mono\',monospace;margin-bottom:4px;">video failed</span><button class="vid-btn" onclick="runVideoScene('+i+')">↺ retry</button>';
+      log('error', `Scene ${i+1}: video failed.`);
+    }
+  } catch(e) {
+    if (svp) svp.innerHTML = '<span style="color:var(--red);font-size:10px;font-family:\'Space Mono\',monospace;margin-bottom:4px;">'+e.message.substring(0,60)+'</span><button class="vid-btn" onclick="runVideoScene('+i+')">↺ retry</button>';
+    log('error', `Scene ${i+1}: video failed — ${e.message}`);
+  }
+}
+
 async function runScene(i) {
   const text = document.getElementById(`st-${i}`)?.value?.trim();
   if (!text) { log('error', `Scene ${i+1}: no description.`); return; }
@@ -512,6 +542,8 @@ async function runScene(i) {
     }
 
     preview.innerHTML = `<img src="${finalUrl}">`;
+    const svp = document.getElementById(`svp-${i}`);
+    if (svp && !videoResults[i]) svp.innerHTML = '<span style="color:var(--text-dimmer);font-size:10px;font-family:\'Space Mono\',monospace;margin-bottom:6px;">no video yet</span><button class=\"vid-btn\" onclick=\"runVideoScene('+i+')\">▶ generate video</button>';
     card.className = 'sc done';
     status.className = 'sc-status done'; status.textContent = '✓ done';
     log('success', `Scene ${i+1}: complete.`);
@@ -536,6 +568,7 @@ async function runAll() {
   if (running) return;
   running = true;
   episodeChain = []; // reset chain for fresh episode run
+  videoResults = new Array(12).fill(null);
   document.getElementById('run-btn').disabled = true;
   for (let i = 0; i < 12; i++) await runScene(i);
   document.getElementById('dl-section').style.display = 'block';
