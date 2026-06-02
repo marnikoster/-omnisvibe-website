@@ -24,17 +24,21 @@ exports.handler = async function(event) {
 
     const safePrompt = prompt.substring(0, 3800);
 
-    // gpt-image-2 size options
+    // gpt-image-2 supported sizes:
+    // 1024x1024 (1:1 square)
+    // 1536x1024 (3:2 landscape / approx 16:9)
+    // 1024x1536 (2:3 portrait)
+    // auto (model decides)
     let imageSize = '1024x1024';
-    if (size === '1536x1024') imageSize = '1536x1024';
-    if (size === '1024x1536') imageSize = '1024x1536';
+    if (size === '1536x1024' || size === '16:9' || size === 'landscape') imageSize = '1536x1024';
+    if (size === '1024x1536' || size === '9:16' || size === 'portrait') imageSize = '1024x1536';
+    if (size === '1:1' || size === 'square') imageSize = '1024x1024';
 
     const payload = JSON.stringify({
       model: 'gpt-image-2',
       prompt: safePrompt,
       n: 1,
-      size: imageSize,
-      response_format: 'b64_json'
+      size: imageSize
     });
 
     const result = await new Promise((resolve, reject) => {
