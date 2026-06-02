@@ -31,7 +31,7 @@ exports.handler = async function(event) {
     if (size === '1024x1536') { width = 1024; height = 1536; }
 
     const payload = JSON.stringify({
-      model: 'aurora',
+      model: 'grok-imagine-image-quality',
       prompt: safePrompt,
       n: 1,
       response_format: 'b64_json'
