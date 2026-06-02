@@ -4,9 +4,6 @@
 [functions]
   node_bundler = "esbuild"
 
-[functions."generate-image-background"]
-  timeout = 900
-
 [[headers]]
   for = "/*"
   [headers.values]
