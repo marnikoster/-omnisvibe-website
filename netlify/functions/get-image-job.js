@@ -16,9 +16,13 @@ exports.handler = async function(event) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'jobId required' }) };
     }
 
-    const store = getStore({ name: 'katachi-jobs', consistency: 'strong' });
-    const job = await store.get(jobId, { type: 'json' });
+    const store = getStore({
+      name: 'katachi-jobs',
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_AUTH_TOKEN
+    });
 
+    const job = await store.get(jobId, { type: 'json' });
     if (!job) {
       return { statusCode: 404, headers, body: JSON.stringify({ error: 'job not found' }) };
     }
