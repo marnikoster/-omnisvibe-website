@@ -438,14 +438,13 @@ async function generateImage(scenePrompt, size) {
   const moodRefs = refs.filter(r => r !== null).slice(0, 2); // max 2 mood refs
   const compressedRefs = await Promise.all(moodRefs.map(r => compressImage(r, 512)));
 
-  const res = await fetch('/.netlify/functions/generate-image-background', {
+  const res = await fetch('/.netlify/functions/generate-image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       prompt: combined.substring(0, 3800),
       size: resolvedSize,
-      apiKey,
-      refs: compressedRefs.length > 0 ? compressedRefs : undefined
+      apiKey
     })
   });
 
