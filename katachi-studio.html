@@ -438,10 +438,13 @@ async function generateImage(scenePrompt, size) {
   const compressedRefs = await Promise.all(moodRefs.map(r => compressImage(r, 512)));
 
   // Step 1: Start the job
-  const startRes = await fetch('/.netlify/functions/start-image-job', {
+  // Generate jobId in browser — pass to background function
+  const jobId = crypto.randomUUID();
+  const startRes = await fetch('/.netlify/functions/start-image-job-background', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      jobId,
       prompt: combined.substring(0, 3800),
       size: resolvedSize,
       apiKey,
@@ -449,13 +452,15 @@ async function generateImage(scenePrompt, size) {
     })
   });
 
+  // jobId generated in browser and passed to background function
+  // Netlify background functions return 202 with empty body — so we pre-generate the jobId
   const startText = await startRes.text();
-  console.log('start-job raw response:', startText.substring(0, 200));
-  if (!startText.trim()) throw new Error(`Empty response from start-image-job (HTTP ${startRes.status})`);
-  const startData = JSON.parse(startText);
-  if (!startRes.ok) throw new Error(startData?.error || `HTTP ${startRes.status}`);
-  const jobId = startData.jobId;
-  if (!jobId) throw new Error(`No jobId in response: ${startText.substring(0, 100)}`);
+  console.log('start-job response:', startRes.status, startText.substring(0, 100));
+  if (!startRes.ok) {
+    const errData = startText ? JSON.parse(startText) : {};
+    throw new Error(errData?.error || `HTTP ${startRes.status}`);
+  }
+  // jobId was already set before the fetch call
 
   // Step 2: Poll until done (max 3 minutes)
   const maxAttempts = 160; // 8 minutes at 3s intervals
