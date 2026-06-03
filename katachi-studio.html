@@ -438,7 +438,7 @@ async function generateImage(scenePrompt, size) {
   const compressedRefs = await Promise.all(moodRefs.map(r => compressImage(r, 512)));
 
   // Step 1: Start the job
-  const startRes = await fetch('/.netlify/functions/start-image-job', {
+  const startRes = await fetch('/.netlify/functions/start-image-job-background', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
