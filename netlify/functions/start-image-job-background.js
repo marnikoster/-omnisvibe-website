@@ -124,17 +124,17 @@ exports.handler = async function(event) {
     }
 
     console.log('OpenAI responded, HTTP status:', result.status);
-    const parsed = JSON.parse(result.body);
+    const openaiParsed = JSON.parse(result.body);
 
     if (result.status !== 200) {
-      const errMsg = parsed?.error?.message || parsed?.error?.code || `HTTP ${result.status}`;
+      const errMsg = openaiParsed?.error?.message || openaiParsed?.error?.code || `HTTP ${result.status}`;
       console.error('OpenAI error:', errMsg);
       await blobSet(store, jobId, { status: 'failed', error: errMsg });
       return { statusCode: 200, body: JSON.stringify({ jobId }) };
     }
 
-    const b64 = parsed.data?.[0]?.b64_json;
-    const url = parsed.data?.[0]?.url;
+    const b64 = openaiParsed.data?.[0]?.b64_json;
+    const url = openaiParsed.data?.[0]?.url;
     const imageUrl = b64 ? `data:image/png;base64,${b64}` : url;
 
     if (!imageUrl) {
