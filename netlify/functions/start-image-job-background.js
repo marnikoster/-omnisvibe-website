@@ -14,8 +14,8 @@ exports.handler = async function(event) {
     return { statusCode: 200, headers, body: '' };
   }
 
-  const jobId = crypto.randomUUID();
-  console.log('Background job started:', jobId);
+  let jobId = crypto.randomUUID(); // will be overridden by passed jobId
+  console.log('Background job invoked');
 
   const getBlobStore = () => getStore({
     name: 'katachi-jobs',
@@ -30,7 +30,10 @@ exports.handler = async function(event) {
   };
 
   try {
-    const { prompt, size, apiKey, refs } = JSON.parse(event.body);
+    const parsed = JSON.parse(event.body);
+    const { prompt, size, apiKey, refs } = parsed;
+    if (parsed.jobId) jobId = parsed.jobId;
+    console.log('Using jobId:', jobId);
     if (!prompt || !apiKey) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'prompt and apiKey required' }) };
     }
