@@ -449,10 +449,13 @@ async function generateImage(scenePrompt, size) {
     })
   });
 
-  const startData = await startRes.json();
+  const startText = await startRes.text();
+  console.log('start-job raw response:', startText.substring(0, 200));
+  if (!startText.trim()) throw new Error(`Empty response from start-image-job (HTTP ${startRes.status})`);
+  const startData = JSON.parse(startText);
   if (!startRes.ok) throw new Error(startData?.error || `HTTP ${startRes.status}`);
   const jobId = startData.jobId;
-  if (!jobId) throw new Error('No jobId returned');
+  if (!jobId) throw new Error(`No jobId in response: ${startText.substring(0, 100)}`);
 
   // Step 2: Poll until done (max 3 minutes)
   const maxAttempts = 160; // 8 minutes at 3s intervals
@@ -460,7 +463,9 @@ async function generateImage(scenePrompt, size) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise(r => setTimeout(r, pollInterval));
     const pollRes = await fetch(`/.netlify/functions/get-image-job?jobId=${jobId}`);
-    const job = await pollRes.json();
+    const pollText = await pollRes.text();
+    if (!pollText.trim()) { console.log('Empty poll response, retrying...'); continue; }
+    const job = JSON.parse(pollText);
     if (job.status === 'done') {
       if (!job.imageUrl) throw new Error('Job done but no image URL');
       return job.imageUrl;
