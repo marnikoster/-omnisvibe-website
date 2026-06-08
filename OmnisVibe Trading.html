@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmnisVibe Trading Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@300;400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream: #f4f1ec;
+  --warm: #eae6de;
+  --ink: #18160f;
+  --ink-mid: #3a3729;
+  --ink-light: #7a7568;
+  --ink-faint: #b5b0a5;
+  --border: rgba(24,22,15,0.10);
+  --border-strong: rgba(24,22,15,0.20);
+  --gold: #8a7040;
+  --pass: #2a5c3f;
+  --pass-bg: #e8f2ec;
+  --watch: #6b4f1a;
+  --watch-bg: #f7f0e3;
+  --fail: #6b2424;
+  --fail-bg: #f5e8e8;
+  --inst: #1a3a6b;
+  --inst-bg: #e8eef7;
+}
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.header {
+  padding: 2rem 2.5rem 1.5rem;
+  border-bottom: 0.5px solid var(--border-strong);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.header-brand h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(22px, 4vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.header-brand p {
+  font-size: 10px;
+  color: var(--ink-light);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.paper-pill {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--cream);
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+/* ── STATUS BAR ── */
+.status-bar {
+  padding: 0.6rem 2.5rem;
+  background: var(--warm);
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--ink-light);
+  min-height: 36px;
+}
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.status-dot.scanning { background: var(--gold); animation: pulse 1s infinite; }
+.status-dot.ready    { background: var(--pass); }
+.status-dot.error    { background: var(--fail); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── PORTFOLIO STRIP ── */
+.pf-strip {
+  padding: 0.7rem 2.5rem;
+  background: white;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.pf-item { font-size: 11px; color: var(--ink-light); }
+.pf-item strong {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+  display: block;
+  line-height: 1.2;
+}
+
+/* ── CONTROLS ── */
+.controls {
+  padding: 1.25rem 2.5rem;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.btn-primary {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--cream);
+  border: none;
+  padding: 11px 24px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.75; }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-secondary {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--ink);
+  border: 0.5px solid var(--border-strong);
+  padding: 11px 22px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-secondary:hover:not(:disabled) { background: var(--warm); }
+.btn-secondary:disabled { opacity: 0.35; cursor: not-allowed; }
+.sent-note { font-size: 11px; color: var(--pass); letter-spacing: 0.04em; }
+
+/* ── SETTINGS PANEL ── */
+.settings-panel {
+  padding: 1rem 2.5rem;
+  background: var(--warm);
+  border-bottom: 0.5px solid var(--border);
+  display: none;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.settings-panel.open { display: flex; }
+.setting-group { display: flex; flex-direction: column; gap: 4px; }
+.setting-group label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-light); }
+.setting-group input {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  background: white;
+  border: 0.5px solid var(--border-strong);
+  padding: 6px 10px;
+  color: var(--ink);
+  width: 260px;
+}
+.setting-group input::placeholder { color: var(--ink-faint); }
+.settings-note { font-size: 10px; color: var(--ink-light); line-height: 1.6; }
+
+/* ── MOOD BAR ── */
+.mood-bar {
+  padding: 0.7rem 2.5rem;
+  background: var(--inst-bg);
+  border-bottom: 0.5px solid var(--border);
+  font-size: 11px;
+  color: var(--inst);
+  display: none;
+  gap: 8px;
+  align-items: center;
+}
+.mood-bar.visible { display: flex; }
+
+/* ── GATE NOTE ── */
+.gate-note {
+  margin: 0 2.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--fail-bg);
+  border-left: 2px solid #c05050;
+  font-size: 10px;
+  color: var(--fail);
+  line-height: 1.6;
+  display: none;
+}
+.gate-note.visible { display: block; }
+
+/* ── RESULTS GRID ── */
+.results {
+  padding: 1.5rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.empty-state {
+  padding: 5rem 2rem;
+  text-align: center;
+}
+.empty-state p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--ink-light);
+  margin-bottom: 6px;
+}
+.empty-state small {
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: 0.05em;
+  line-height: 1.7;
+}
+
+/* ── COIN CARD ── */
+.card {
+  background: white;
+  border: 0.5px solid var(--border);
+  padding: 1.25rem 1.5rem;
+  display: grid;
+  grid-template-columns: 48px 1fr 160px;
+  gap: 1rem;
+  align-items: start;
+  transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--border-strong); }
+.card.dimmed { opacity: 0.5; }
+
+.rank {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  font-weight: 400;
+  color: var(--ink-faint);
+  text-align: center;
+  padding-top: 2px;
+  line-height: 1;
+}
+.card-body {}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.sym {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.cname { font-size: 11px; color: var(--ink-light); }
+.cat   { font-size: 10px; color: var(--ink-faint); }
+
+.badge {
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+.b-signal   { background: var(--pass-bg); color: var(--pass); }
+.b-watchlist{ background: var(--watch-bg); color: var(--watch); }
+.b-fail     { background: var(--fail-bg); color: var(--fail); }
+.b-inst     { background: var(--inst-bg); color: var(--inst); }
+.b-feather  { background: #eef0ff; color: #3a4580; }
+.b-light    { background: var(--pass-bg); color: var(--pass); }
+.b-moderate { background: var(--watch-bg); color: var(--watch); }
+.b-strong   { background: #fff2e8; color: #7a3c10; }
+.b-allout   { background: var(--ink); color: var(--cream); }
+.b-day      { background: #fff8e0; color: #6b5800; }
+.b-week     { background: #e8f5e8; color: #1a4a1a; }
+.b-long     { background: #e8eaf5; color: #1a246b; }
+
+/* Dimension boxes */
+.dims {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.dim {
+  background: var(--warm);
+  padding: 8px 10px;
+  border-radius: 2px;
+}
+.dim-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.dim-label span { font-weight: 500; color: var(--ink); }
+.dim-row {
+  font-size: 10px;
+  color: var(--ink-mid);
+  display: flex;
+  justify-content: space-between;
+  line-height: 1.75;
+}
+.dim-row-l { color: var(--ink-light); }
+.bar { height: 3px; background: rgba(24,22,15,0.08); border-radius: 2px; overflow: hidden; margin-top: 5px; }
+.bar-fill { height: 100%; background: var(--ink-mid); border-radius: 2px; }
+.dim-note { font-size: 10px; color: var(--ink-light); font-style: italic; margin-top: 5px; line-height: 1.5; }
+.gate-warn { font-size: 10px; color: var(--fail); font-weight: 500; margin-top: 3px; }
+
+.overview  { font-size: 11px; color: var(--ink-light); line-height: 1.6; font-style: italic; margin-bottom: 6px; }
+.risks     { font-size: 10px; color: var(--fail); line-height: 1.7; margin-bottom: 4px; }
+.sells     { font-size: 10px; color: var(--ink-light); line-height: 1.7; }
+
+/* Card right panel */
+.card-right { text-align: right; padding-top: 2px; }
+.big-score {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 52px;
+  font-weight: 500;
+  line-height: 1;
+}
+.score-lbl { font-size: 10px; color: var(--ink-faint); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+.alloc { font-size: 11px; color: var(--ink-light); line-height: 1.7; margin-top: 6px; }
+.alloc strong { color: var(--ink); font-weight: 500; }
+.liq {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  display: inline-block;
+  letter-spacing: 0.04em;
+  margin-top: 5px;
+}
+.liq-Low    { background: var(--fail-bg); color: var(--fail); }
+.liq-Medium { background: var(--watch-bg); color: var(--watch); }
+.liq-High   { background: var(--pass-bg); color: var(--pass); }
+.exchanges  { font-size: 10px; color: var(--ink-faint); margin-top: 5px; }
+
+/* ── FOOTER ── */
+.footer {
+  padding: 1rem 2.5rem;
+  border-top: 0.5px solid var(--border);
+  font-size: 10px;
+  color: var(--ink-faint);
+  line-height: 1.8;
+  letter-spacing: 0.03em;
+}
+
+/* ── SPINNER ── */
+.spin {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border: 1.5px solid var(--ink-faint);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Mobile */
+@media (max-width: 640px) {
+  .header, .pf-strip, .controls, .results, .status-bar { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .card { grid-template-columns: 36px 1fr; }
+  .card-right { display: none; }
+  .dims { grid-template-columns: 1fr; }
+  .setting-group input { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <h1>OmnisVibe Trading</h1>
+    <p>CoinPicks Signal Engine · Full Research Rubric</p>
+  </div>
+  <span class="paper-pill">Paper Trading Only</span>
+</div>
+
+<div class="pf-strip">
+  <div class="pf-item">Portfolio <strong>$10,000 AUD</strong></div>
+  <div class="pf-item">Method <strong>CoinPicks v1.0</strong></div>
+  <div class="pf-item">Gate <strong>Product 16+/30</strong></div>
+  <div class="pf-item">Signal threshold <strong>70%+</strong></div>
+  <div class="pf-item" id="lastScanItem">Last scan <strong id="lastScan">—</strong></div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot" id="dot"></div>
+  <span id="statusTxt">Ready — press Run Full Scan to research today's trending coins</span>
+</div>
+
+<div class="controls">
+  <button class="btn-primary" id="scanBtn" onclick="runScan()">▶ Run Full Scan</button>
+  <button class="btn-secondary" id="settingsBtn" onclick="toggleSettings()">⚙ API Settings</button>
+  <button class="btn-secondary" id="tgBtn" onclick="sendTelegram()" disabled>↗ Send to Telegram</button>
+  <span class="sent-note" id="sentNote"></span>
+</div>
+
+<div class="settings-panel" id="settingsPanel">
+  <div class="setting-group">
+    <label>Anthropic API Key</label>
+    <input type="password" id="anthropicKey" placeholder="sk-ant-..." />
+  </div>
+  <div class="setting-group">
+    <label>Telegram Bot Token</label>
+    <input type="password" id="tgToken" placeholder="123456:ABCdef..." />
+  </div>
+  <div class="setting-group">
+    <label>Telegram Chat ID</label>
+    <input type="text" id="tgChatId" placeholder="Your chat ID" />
+  </div>
+  <div class="settings-note">
+    Keys are stored in your browser only.<br>Never sent anywhere except Anthropic + Telegram APIs.
+  </div>
+</div>
+
+<div class="mood-bar" id="moodBar">
+  <span>📊</span>
+  <span id="moodTxt"></span>
+</div>
+
+<div class="gate-note" id="gateNote"></div>
+
+<div class="results" id="results">
+  <div class="empty-state">
+    <p>No signals yet</p>
+    <small>
+      Press Run Full Scan to search today's trending altcoins<br>
+      and run each one through the full CoinPicks algorithm.<br><br>
+      Product · Narrative · Team · Liquidity · Institutional alerts
+    </small>
+  </div>
+</div>
+
+<div class="footer">
+  CoinPicks v1.0 · Product max 30 (gate 16+) · Narrative max 25 · Team max 10 · Score = ((P/30)+(N/25)+(T/10))÷3×100<br>
+  Signal ≥70% · Watch 65–69% · Fail &lt;65% or Product &lt;16 · Paper trading only · Not financial advice · omnisvibe.com
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let lastCoins = [];
+let settingsOpen = false;
+
+const PORTFOLIO = 10000;
+const CV = {
+  'Feather':  { pct: 0.05, cls: 'b-feather' },
+  'Light':    { pct: 0.10, cls: 'b-light' },
+  'Moderate': { pct: 0.15, cls: 'b-moderate' },
+  'Strong':   { pct: 0.25, cls: 'b-strong' },
+  'All Out':  { pct: 0.40, cls: 'b-allout' },
+};
+
+// ── SETTINGS PERSISTENCE ───────────────────────────────────────────────────
+function saveSettings() {
+  localStorage.setItem('ov_ak',  document.getElementById('anthropicKey').value);
+  localStorage.setItem('ov_tt',  document.getElementById('tgToken').value);
+  localStorage.setItem('ov_cid', document.getElementById('tgChatId').value);
+}
+function loadSettings() {
+  document.getElementById('anthropicKey').value = localStorage.getItem('ov_ak')  || '';
+  document.getElementById('tgToken').value      = localStorage.getItem('ov_tt')  || '';
+  document.getElementById('tgChatId').value     = localStorage.getItem('ov_cid') || '';
+}
+function toggleSettings() {
+  settingsOpen = !settingsOpen;
+  document.getElementById('settingsPanel').classList.toggle('open', settingsOpen);
+  if (!settingsOpen) saveSettings();
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function setStatus(msg, mode = 'idle') {
+  document.getElementById('statusTxt').innerHTML =
+    mode === 'scanning' ? `<span class="spin"></span>${msg}` : msg;
+  const dot = document.getElementById('dot');
+  dot.className = 'status-dot' + (mode === 'scanning' ? ' scanning' : mode === 'ready' ? ' ready' : mode === 'error' ? ' error' : '');
+}
+function pct(v, max) { return Math.min(100, Math.round((v / max) * 100)); }
+function aud(n)      { return '$' + Number(n).toLocaleString('en-AU', { maximumFractionDigits: 0 }) + ' AUD'; }
+
+// ── MAIN SCAN ──────────────────────────────────────────────────────────────
+async function runScan() {
+  saveSettings();
+  const apiKey = localStorage.getItem('ov_ak');
+  if (!apiKey) {
+    alert('Please open ⚙ API Settings and enter your Anthropic API key first.');
+    settingsOpen = true;
+    document.getElementById('settingsPanel').classList.add('open');
+    return;
+  }
+
+  document.getElementById('scanBtn').disabled = true;
+  document.getElementById('tgBtn').disabled   = true;
+  document.getElementById('sentNote').textContent = '';
+  document.getElementById('gateNote').classList.remove('visible');
+  document.getElementById('moodBar').classList.remove('visible');
+  setStatus('Searching trending coins and running full CoinPicks research…', 'scanning');
+
+  const today = new Date().toLocaleDateString('en-AU', {
+    weekday:'long', day:'numeric', month:'long', year:'numeric'
+  });
+  document.getElementById('lastScan').textContent =
+    new Date().toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+
+  const SYSTEM = `You are the CoinPicks Research Engine for OmnisVibe Trading — a paper trading intelligence system.
+
+Today is ${today}. Use web search to find the 6 most trending/high-momentum altcoins right now (last 24-48 hours). Exclude stablecoins, BTC, ETH, and pure meme coins with zero utility.
+
+For each coin, research it thoroughly using web search and score it using this EXACT framework:
+
+PRODUCT (max 30) — AUTO-FAIL if below 16:
+- ease_of_use: 0-10 (can a non-technical person use it today?)
+- hair_on_fire: 0-10 (urgent painful problem it solves?)
+- exclusivity: 0-10 (real moat — unique tech, network effects, can't be copied?)
+
+NARRATIVE (max 25):
+- maturity: 0-7 (early=high risk/reward, mid=sweet spot, late=lower upside)
+- smart_money: 0-6 (VCs, known wallets accumulating? funding rounds?)
+- communication: 0-5 (team active on X/Twitter, AMAs, dev updates?)
+- lineage: 0-4 (respected founders, known backers, pedigree?)
+- mutation: 0-3 (narrative adapting intelligently to market?)
+
+TEAM (max 10):
+- weighted = (founder_score×5 + sum_others) / (5 + count_others)
+
+COINPICKS SCORE = ((product_total/30) + (narrative_total/25) + (team_weighted/10)) / 3 × 100
+
+VERDICT:
+- SIGNAL if score >= 70 AND product_total >= 16
+- WATCHLIST if score 65-69 AND product_total >= 16
+- FAIL if score < 65 OR product_total < 16
+
+CONVICTION (SIGNAL only): Feather 70-74% / Light 75-79% / Moderate 80-84% / Strong 85-89% / All Out 90-100%
+
+TIME HORIZON (SIGNAL only): Day Trade / Week Trade / Long Term
+
+INSTITUTIONAL ALERT: if coin is directly connected to BlackRock, JPMorgan, Goldman Sachs, Chainlink+bank, Polygon+enterprise, CBDC, ETF approval, RWA tokenization — set institutional_alert: true
+
+Return ONLY valid JSON, no markdown, no explanation:
+{
+  "scanSummary": "one sentence on today's market mood",
+  "coins": [
+    {
+      "rank": 1,
+      "symbol": "XYZ",
+      "name": "Full Name",
+      "category": "DeFi/AI/L2/etc",
+      "chain": "Ethereum",
+      "overview": "2-3 sentence summary",
+      "institutional_alert": false,
+      "institutional_reason": null,
+      "product": { "ease_of_use": 0, "hair_on_fire": 0, "exclusivity": 0, "total": 0, "notes": "assessment" },
+      "narrative": { "maturity": 0, "smart_money": 0, "communication": 0, "lineage": 0, "mutation": 0, "total": 0, "notes": "assessment" },
+      "team": { "weighted": 0, "founder": "Name — background", "notes": "assessment" },
+      "liquidity": { "tier": "Low/Medium/High", "notes": "one sentence" },
+      "coinpicks_score": 0,
+      "verdict": "SIGNAL/WATCHLIST/FAIL",
+      "verdict_reason": "one sentence",
+      "conviction": null,
+      "time_horizon": null,
+      "sell_targets": ["Short: ...", "Mid: ...", "Exit: ..."],
+      "risk_flags": ["risk 1", "risk 2"],
+      "where_to_buy": ["KuCoin", "Swyftx"],
+      "auto_fail_reason": null
+    }
+  ]
+}
+
+Be rigorous and honest. Never inflate scores. If product < 16 auto-fail it clearly.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: SYSTEM,
+        messages: [{ role: 'user', content: 'Run today\'s CoinPicks scan. Research 6 trending altcoins and score them all. Return only JSON.' }],
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || `API error ${res.status}`);
+
+    const raw = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+    const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+    if (s < 0) throw new Error('No JSON returned from AI');
+    const parsed = JSON.parse(raw.slice(s, e + 1));
+
+    lastCoins = parsed.coins || [];
+
+    if (parsed.scanSummary) {
+      document.getElementById('moodTxt').textContent = parsed.scanSummary;
+      document.getElementById('moodBar').classList.add('visible');
+    }
+
+    const fails = lastCoins.filter(c => c.verdict === 'FAIL' && c.auto_fail_reason);
+    if (fails.length) {
+      const gn = document.getElementById('gateNote');
+      gn.textContent = `❌ Gate failures: ${fails.map(c => `$${c.symbol} — ${c.auto_fail_reason}`).join(' · ')}`;
+      gn.classList.add('visible');
+    }
+
+    renderCoins(lastCoins);
+    setStatus(`Scan complete · ${lastCoins.filter(c=>c.verdict==='SIGNAL').length} signal(s) found`, 'ready');
+    document.getElementById('tgBtn').disabled = false;
+
+  } catch (err) {
+    setStatus(`Scan failed — ${err.message}`, 'error');
+    console.error(err);
+  }
+
+  document.getElementById('scanBtn').disabled = false;
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function renderCoins(coins) {
+  const el = document.getElementById('results');
+  if (!coins.length) {
+    el.innerHTML = '<div class="empty-state"><p>No results</p></div>';
+    return;
+  }
+
+  el.innerHTML = coins.map((c, i) => {
+    const cv     = CV[c.conviction];
+    const alloc  = cv ? Math.round(PORTFOLIO * cv.pct) : 0;
+    const allocP = cv ? Math.round(cv.pct * 100) : 0;
+    const isFail = c.verdict === 'FAIL';
+    const isSig  = c.verdict === 'SIGNAL';
+    const isWatch= c.verdict === 'WATCHLIST';
+
+    const vCls = isFail ? 'b-fail' : isWatch ? 'b-watchlist' : 'b-signal';
+    const scoreColor = isFail ? 'var(--ink-faint)' : isWatch ? 'var(--watch)' : 'var(--ink)';
+
+    const hzCls = { 'Day Trade':'b-day','Week Trade':'b-week','Long Term':'b-long' }[c.time_horizon] || '';
+
+    return `<div class="card${isFail?' dimmed':''}">
+      <div class="rank">${c.rank||i+1}</div>
+
+      <div class="card-body">
+        <div class="card-head">
+          <span class="sym">$${c.symbol}</span>
+          <span class="cname">${c.name||''}</span>
+          <span class="cat">${c.category||''}</span>
+          <span class="badge ${vCls}">${c.verdict}</span>
+          ${cv ? `<span class="badge ${cv.cls}">${c.conviction}</span>` : ''}
+          ${c.time_horizon ? `<span class="badge ${hzCls}">${c.time_horizon}</span>` : ''}
+          ${c.institutional_alert ? `<span class="badge b-inst">⭐ Institutional</span>` : ''}
+        </div>
+
+        <div class="dims">
+          <div class="dim">
+            <div class="dim-label">Product <span>${c.product?.total||0}/30</span></div>
+            <div class="dim-row"><span class="dim-row-l">Ease of use</span><span>${c.product?.ease_of_use||0}</span></div>
+            <div class="dim-row"><span class="dim-row-l">Hair on fire</span><span>${c.product?.hair_on_fire||0}</span></div>
+            <div class="dim-row"><span class="dim-row-l">Exclusivity</span><span>${c.product?.exclusivity||0}</span></div>
+            <div class="bar"><div class="bar-fill" style="width:${pct(c.product?.total||0,30)}%"></div></div>
+            ${c.product?.notes ? `<div class="dim-note">${c.product.notes}</div>` : ''}
+            ${(c.product?.total||0)<16 ? `<div class="gate-warn">⚠ Below product gate (16+) — auto-fail</div>` : ''}
+          </div>
+          <div class="dim">
+            <div class="dim-label">Narrative <span>${c.narrative?.total||0}/25</span></div>
+            <div class="dim-row"><span class="dim-row-l">Maturity</span><span>${c.narrative?.maturity||0}/7</span></div>
+            <div class="dim-row"><span class="dim-row-l">Smart money</span><span>${c.narrative?.smart_money||0}/6</span></div>
+            <div class="dim-row"><span class="dim-row-l">Communication</span><span>${c.narrative?.communication||0}/5</span></div>
+            <div class="dim-row"><span class="dim-row-l">Lineage</span><span>${c.narrative?.lineage||0}/4</span></div>
+            <div class="dim-row"><span class="dim-row-l">Mutation</span><span>${c.narrative?.mutation||0}/3</span></div>
+            <div class="bar"><div class="bar-fill" style="width:${pct(c.narrative?.total||0,25)}%"></div></div>
+            ${c.narrative?.notes ? `<div class="dim-note">${c.narrative.notes}</div>` : ''}
+          </div>
+          <div class="dim">
+            <div class="dim-label">Team <span>${(c.team?.weighted||0).toFixed(1)}/10</span></div>
+            ${c.team?.founder ? `<div class="dim-row" style="font-size:10px;color:var(--ink-mid);line-height:1.5;margin-top:2px;">${c.team.founder}</div>` : ''}
+            <div class="bar" style="margin-top:6px;"><div class="bar-fill" style="width:${pct(c.team?.weighted||0,10)}%"></div></div>
+            ${c.team?.notes ? `<div class="dim-note">${c.team.notes}</div>` : ''}
+          </div>
+        </div>
+
+        ${c.overview ? `<div class="overview">${c.overview}</div>` : ''}
+        ${c.risk_flags?.length ? `<div class="risks">⚠ ${c.risk_flags.join(' · ')}</div>` : ''}
+        ${!isFail && c.sell_targets?.length ? `<div class="sells">↗ ${c.sell_targets.join(' · ')}</div>` : ''}
+        ${c.institutional_reason ? `<div class="sells" style="color:var(--inst)">⭐ ${c.institutional_reason}</div>` : ''}
+      </div>
+
+      <div class="card-right">
+        <div class="big-score" style="color:${scoreColor}">${Math.round(c.coinpicks_score||0)}</div>
+        <div class="score-lbl">CoinPicks %</div>
+        <span class="liq liq-${c.liquidity?.tier||'Medium'}">${c.liquidity?.tier||'—'} liquidity</span>
+        ${isSig && cv ? `<div class="alloc">Allocate<br><strong>${aud(alloc)}</strong><br><span style="color:var(--ink-faint)">${allocP}% of portfolio</span></div>` : ''}
+        ${isSig ? `<div class="alloc" style="margin-top:4px;color:var(--ink-faint)">Micro entry: <strong style="color:var(--ink)">$5–$10</strong></div>` : ''}
+        ${c.where_to_buy?.length ? `<div class="exchanges">${c.where_to_buy.join(' · ')}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TELEGRAM ───────────────────────────────────────────────────────────────
+async function sendTelegram() {
+  const token  = localStorage.getItem('ov_tt');
+  const chatId = localStorage.getItem('ov_cid');
+  if (!token || !chatId) {
+    alert('Please enter your Telegram Bot Token and Chat ID in ⚙ API Settings first.');
+    settingsOpen = true;
+    document.getElementById('settingsPanel').classList.add('open');
+    return;
+  }
+
+  const signals  = lastCoins.filter(c => c.verdict === 'SIGNAL');
+  const watches  = lastCoins.filter(c => c.verdict === 'WATCHLIST');
+  const fails    = lastCoins.filter(c => c.verdict === 'FAIL');
+  const today    = new Date().toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long' });
+
+  const lines = signals.map(c => {
+    const cv    = CV[c.conviction];
+    const alloc = cv ? Math.round(PORTFOLIO * cv.pct) : 0;
+    return `✅ $${c.symbol} — ${c.conviction} conviction (${Math.round((cv?.pct||0)*100)}% · $${alloc} AUD)\n   Score: ${Math.round(c.coinpicks_score)}% · ${c.time_horizon||''}\n   ${c.verdict_reason||''}`;
+  });
+
+  if (watches.length) lines.push(`\n👀 Watch: ${watches.map(c=>`$${c.symbol} (${Math.round(c.coinpicks_score)}%)`).join(', ')}`);
+  if (fails.length)   lines.push(`❌ Fail: ${fails.map(c=>`$${c.symbol}`).join(', ')}`);
+
+  const msg = `🟢 OMNISVIBE PAPER SIGNAL\n${today}\n\n${lines.join('\n\n')}\n\n📊 $10,000 AUD paper portfolio · Spot only\nCoinPicks v1.0 · Full research rubric\n\n⚠️ Paper trade only. Not financial advice.\n— OmnisVibe Trading`;
+
+  document.getElementById('tgBtn').disabled = true;
+  setStatus('Sending to Telegram…', 'scanning');
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: msg }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setStatus('Signals sent to Telegram ✓', 'ready');
+      document.getElementById('sentNote').textContent = '✓ Sent to Telegram';
+    } else {
+      throw new Error(data.description || 'Telegram API error');
+    }
+  } catch (err) {
+    setStatus(`Telegram failed — ${err.message}`, 'error');
+  }
+
+  document.getElementById('tgBtn').disabled = false;
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+loadSettings();
+</script>
+</body>
+</html>
