@@ -420,15 +420,15 @@ body {
 <div class="settings-panel" id="settingsPanel">
   <div class="setting-group">
     <label>Anthropic API Key</label>
-    <input type="password" id="anthropicKey" placeholder="sk-ant-..." />
+    <input type="password" id="anthropicKey" placeholder="sk-ant-..." oninput="saveSettings()" />
   </div>
   <div class="setting-group">
     <label>Telegram Bot Token</label>
-    <input type="password" id="tgToken" placeholder="123456:ABCdef..." />
+    <input type="password" id="tgToken" placeholder="123456:ABCdef..." oninput="saveSettings()" />
   </div>
   <div class="setting-group">
     <label>Telegram Chat ID</label>
-    <input type="text" id="tgChatId" placeholder="Your chat ID" />
+    <input type="text" id="tgChatId" placeholder="Your chat ID" oninput="saveSettings()" />
   </div>
   <div class="settings-note">
     Keys are stored in your browser only.<br>Never sent anywhere except Anthropic + Telegram APIs.
