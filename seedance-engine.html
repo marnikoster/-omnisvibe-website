@@ -299,15 +299,25 @@ async function pollVideoStatus(requestId, apiKey, labelEl) {
     await new Promise(r => setTimeout(r, 3500));
     if (labelEl) labelEl.textContent = labels[tick % labels.length];
     tick++;
-    const res = await fetch('/.netlify/functions/check-video-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requestId, apiKey })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || `Poll HTTP ${res.status}`);
-    if (data.status === 'COMPLETED') return data.videoUrl;
-    if (data.status === 'FAILED') throw new Error(data.error || 'Seedance generation failed');
+    try {
+      const res = await fetch('/.netlify/functions/check-video-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, apiKey })
+      });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch (_) {
+        log('info', `Poll tick ${tick}: non-JSON response, continuing (${text.substring(0, 60)})`);
+        continue;
+      }
+      if (data.status === 'COMPLETED') return data.videoUrl;
+      if (data.status === 'FAILED') throw new Error(data.error || 'Seedance generation failed');
+      // IN_QUEUE / IN_PROGRESS / anything else — keep looping
+    } catch (e) {
+      if (e.message.includes('FAILED')) throw e; // propagate real failures
+      log('info', `Poll tick ${tick}: ${e.message} — retrying`);
+    }
   }
 }
 

@@ -19,6 +19,11 @@ function falGet(path, apiKey) {
   });
 }
 
+function tryParse(text) {
+  try { return text.trim() ? JSON.parse(text) : null; }
+  catch (_) { return null; }
+}
+
 exports.handler = async function(event) {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }, body: '' };
@@ -29,12 +34,19 @@ exports.handler = async function(event) {
     if (!requestId || !apiKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'requestId and apiKey required' }) };
 
     const statusRes = await falGet(`/${MODEL}/requests/${requestId}/status`, apiKey);
-    if (statusRes.status !== 200) return { statusCode: statusRes.status, headers, body: statusRes.body };
-    const statusData = JSON.parse(statusRes.body);
+    console.log(`[check-video-status] HTTP ${statusRes.status} raw body: ${statusRes.body}`);
+
+    const statusData = tryParse(statusRes.body);
+
+    // Non-200, empty body, or unparseable → treat as still in progress
+    if (statusRes.status !== 200 || !statusData) {
+      return { statusCode: 200, headers, body: JSON.stringify({ status: 'IN_PROGRESS' }) };
+    }
 
     if (statusData.status === 'COMPLETED') {
       const resultRes = await falGet(`/${MODEL}/requests/${requestId}`, apiKey);
-      const result = JSON.parse(resultRes.body);
+      console.log(`[check-video-status] result HTTP ${resultRes.status} raw body: ${resultRes.body.substring(0, 300)}`);
+      const result = tryParse(resultRes.body) || {};
       const videoUrl = result.video?.url || result.output?.video?.url || result.video_url || null;
       return { statusCode: 200, headers, body: JSON.stringify({ status: 'COMPLETED', videoUrl }) };
     }
@@ -43,8 +55,12 @@ exports.handler = async function(event) {
       return { statusCode: 200, headers, body: JSON.stringify({ status: 'FAILED', error: statusData.error || 'Generation failed' }) };
     }
 
+    // IN_QUEUE, IN_PROGRESS, or any other value — keep waiting
     return { statusCode: 200, headers, body: JSON.stringify({ status: statusData.status || 'IN_PROGRESS' }) };
+
   } catch (err) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+    console.log(`[check-video-status] caught error: ${err.message}`);
+    // Don't 500 — return IN_PROGRESS so the frontend keeps polling
+    return { statusCode: 200, headers, body: JSON.stringify({ status: 'IN_PROGRESS' }) };
   }
 };
