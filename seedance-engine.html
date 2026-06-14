@@ -289,10 +289,11 @@ async function submitVideo(imageUrl, prompt, apiKey) {
   if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
   const requestId = data.request_id;
   if (!requestId) throw new Error('No request_id in queue response');
-  return requestId;
+  // FAL returns canonical status_url/response_url that differ from the submit path
+  return { requestId, statusUrl: data.status_url, responseUrl: data.response_url };
 }
 
-async function pollVideoStatus(requestId, apiKey, labelEl) {
+async function pollVideoStatus(requestId, apiKey, statusUrl, responseUrl, labelEl) {
   const labels = ['generating...', 'processing...', 'rendering...', 'almost there...'];
   let tick = 0;
   while (true) {
@@ -303,7 +304,7 @@ async function pollVideoStatus(requestId, apiKey, labelEl) {
       const res = await fetch('/.netlify/functions/check-video-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId, apiKey })
+        body: JSON.stringify({ requestId, apiKey, statusUrl, responseUrl })
       });
       const text = await res.text();
       let data;
@@ -348,13 +349,13 @@ async function runOne(i) {
     status.textContent = 'queuing...';
 
     log('info', `Image ${i + 1}: submitting to Seedance queue...`);
-    const requestId = await submitVideo(imageUrl, prompt, apiKey);
+    const { requestId, statusUrl, responseUrl } = await submitVideo(imageUrl, prompt, apiKey);
     log('info', `Image ${i + 1}: queued (${requestId}) — polling...`);
 
     if (lt) lt.textContent = 'generating...';
     status.textContent = 'generating...';
 
-    const videoUrl = await pollVideoStatus(requestId, apiKey, document.getElementById(`lt-${i}`));
+    const videoUrl = await pollVideoStatus(requestId, apiKey, statusUrl, responseUrl, document.getElementById(`lt-${i}`));
     if (!videoUrl) throw new Error('No video URL in completed result');
 
     videoResults[i] = videoUrl;

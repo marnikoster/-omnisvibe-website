@@ -1,12 +1,16 @@
 const https = require('https');
 
-const MODEL = 'fal-ai/bytedance/seedance/v1/lite/image-to-video';
+// Fallback model path used only if frontend doesn't supply FAL's canonical URLs.
+// NOTE: FAL's status/result URLs drop the model subpath — they use
+// fal-ai/bytedance/requests/{id} not fal-ai/bytedance/seedance/v1/lite/.../requests/{id}
+const QUEUE_HOST = 'queue.fal.run';
 
-function falGet(path, apiKey) {
+function falGet(url, apiKey) {
+  const parsed = new URL(url);
   return new Promise((resolve, reject) => {
     const req = https.request({
-      hostname: 'queue.fal.run',
-      path,
+      hostname: parsed.hostname,
+      path: parsed.pathname + (parsed.search || ''),
       method: 'GET',
       headers: { 'Authorization': 'Key ' + apiKey }
     }, (res) => {
@@ -30,21 +34,22 @@ exports.handler = async function(event) {
   }
   const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
   try {
-    const { requestId, apiKey } = JSON.parse(event.body);
+    const { requestId, apiKey, statusUrl, responseUrl } = JSON.parse(event.body);
     if (!requestId || !apiKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'requestId and apiKey required' }) };
+    if (!statusUrl || !responseUrl) return { statusCode: 400, headers, body: JSON.stringify({ error: 'statusUrl and responseUrl required — submit response must be forwarded' }) };
 
-    const statusRes = await falGet(`/${MODEL}/requests/${requestId}/status`, apiKey);
+    const statusRes = await falGet(statusUrl, apiKey);
     console.log(`[check-video-status] HTTP ${statusRes.status} raw body: ${statusRes.body}`);
 
     const statusData = tryParse(statusRes.body);
 
-    // Non-200, empty body, or unparseable → treat as still in progress
+    // Empty, unparseable, or non-200 → treat as still in progress
     if (statusRes.status !== 200 || !statusData) {
       return { statusCode: 200, headers, body: JSON.stringify({ status: 'IN_PROGRESS' }) };
     }
 
     if (statusData.status === 'COMPLETED') {
-      const resultRes = await falGet(`/${MODEL}/requests/${requestId}`, apiKey);
+      const resultRes = await falGet(responseUrl, apiKey);
       console.log(`[check-video-status] result HTTP ${resultRes.status} raw body: ${resultRes.body.substring(0, 300)}`);
       const result = tryParse(resultRes.body) || {};
       const videoUrl = result.video?.url || result.output?.video?.url || result.video_url || null;
@@ -55,12 +60,10 @@ exports.handler = async function(event) {
       return { statusCode: 200, headers, body: JSON.stringify({ status: 'FAILED', error: statusData.error || 'Generation failed' }) };
     }
 
-    // IN_QUEUE, IN_PROGRESS, or any other value — keep waiting
     return { statusCode: 200, headers, body: JSON.stringify({ status: statusData.status || 'IN_PROGRESS' }) };
 
   } catch (err) {
     console.log(`[check-video-status] caught error: ${err.message}`);
-    // Don't 500 — return IN_PROGRESS so the frontend keeps polling
     return { statusCode: 200, headers, body: JSON.stringify({ status: 'IN_PROGRESS' }) };
   }
 };
