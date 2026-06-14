@@ -10,7 +10,7 @@ exports.handler = async function(event) {
     if (!imageUrl || !apiKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'imageUrl and apiKey required' }) };
     const payload = JSON.stringify({ image_url: imageUrl, prompt: (prompt || ''), duration: 5, resolution: '720p' });
     const result = await new Promise((resolve, reject) => {
-      const req = https.request({ hostname: 'fal.run', path: '/fal-ai/bytedance/seedance/v1/lite/image-to-video', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Key ' + apiKey, 'Content-Length': Buffer.byteLength(payload) } }, (res) => {
+      const req = https.request({ hostname: 'queue.fal.run', path: '/fal-ai/bytedance/seedance/v1/lite/image-to-video', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Key ' + apiKey, 'Content-Length': Buffer.byteLength(payload) } }, (res) => {
         let data = '';
         res.on('data', chunk => data += chunk);
         res.on('end', () => resolve({ status: res.statusCode, body: data }));
