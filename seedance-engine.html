@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEEDANCE ENGINE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;--border:#2a2a2a;
+    --accent:#c8f135;--accent2:#35f1a0;--text:#e8e8e8;
+    --text-dim:#888;--text-dimmer:#555;--red:#ff4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;min-height:100vh}
+  .header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100}
+  .logo{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;letter-spacing:4px}
+  .logo span{display:block;font-size:9px;letter-spacing:6px;color:var(--text-dim);font-weight:400;margin-top:2px}
+  .badge{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--border);padding:6px 16px;border-radius:20px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-dim)}
+  .badge .dot{width:5px;height:5px;background:var(--border);border-radius:50%}
+  .reset-btn{background:none;border:1px solid var(--border);color:var(--text-dim);padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;transition:all .2s}
+  .reset-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .panel{padding:32px;max-width:1400px}
+  .section{margin-bottom:32px}
+  .section-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:12px}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+  .input-group{display:flex;flex-direction:column;gap:6px}
+  .input-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text-dim)}
+  .input-row{display:flex;gap:8px}
+  input,textarea,select{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:4px;font-family:'Inter',sans-serif;font-size:12px;width:100%;outline:none;transition:border-color .2s}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+  input[type=password]{letter-spacing:2px}
+  textarea{resize:vertical;line-height:1.75}
+  .show-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);padding:10px 14px;border-radius:4px;cursor:pointer;font-size:11px;white-space:nowrap;font-family:'Space Mono',monospace;transition:all .2s}
+  .show-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .warn{color:var(--red);font-size:10px;margin-top:4px;font-family:'Space Mono',monospace}
+  .ref-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:480px}
+  .ref-slot{aspect-ratio:1;background:var(--bg3);border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:border-color .2s}
+  .ref-slot:hover{border-color:var(--accent)}
+  .ref-slot img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+  .ref-slot .plus{color:var(--text-dimmer);font-size:22px;pointer-events:none}
+  .ref-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .ref-slot .rx{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.8);border:none;color:var(--red);cursor:pointer;border-radius:3px;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center}
+  .ref-slot:hover .rx{display:flex}
+  .settings-row{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  .settings-row .input-group{min-width:200px}
+  .main-acts{display:flex;gap:12px;margin-bottom:28px;align-items:center}
+  .btn-primary{background:var(--accent);color:#0a0a0a;border:none;padding:12px 26px;border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px;transition:all .2s}
+  .btn-primary:hover{background:#d4ff40;transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .btn-outline{background:none;border:1px solid var(--border);color:var(--text-dim);padding:12px 22px;border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;transition:all .2s}
+  .btn-outline:hover{border-color:var(--text-dim);color:var(--text)}
+  .log-section{margin-top:28px}
+  .log-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--text-dimmer);margin-bottom:8px}
+  .log-box{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px;max-height:220px;overflow-y:auto;font-family:'Space Mono',monospace;font-size:11px;line-height:2}
+  .log-line{color:var(--text-dimmer)}
+  .log-line.error{color:var(--red)}
+  .log-line.success{color:var(--accent2)}
+  .log-line.info{color:var(--accent)}
+  .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .video-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .vc{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .2s}
+  .vc.running{border-color:var(--accent)}
+  .vc.done{border-color:var(--accent2)}
+  .vc.error{border-color:var(--red)}
+  .vc-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)}
+  .vc-num{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--accent)}
+  .vc-status{font-size:10px;color:var(--text-dimmer)}
+  .vc-status.running{color:var(--accent)}
+  .vc-status.done{color:var(--accent2)}
+  .vc-status.error{color:var(--red)}
+  .vc-media{width:100%;aspect-ratio:16/9;background:var(--bg3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .vc-media img{width:100%;height:100%;object-fit:cover;opacity:.35}
+  .vc-media video{width:100%;height:100%;object-fit:cover}
+  .vc-media .overlay{position:absolute;inset:0;background:rgba(10,10,10,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  .vc-media .lt{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:1px}
+  .vc-foot{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap}
+  .vc-btn{background:none;border:1px solid var(--border);color:var(--text-dim);padding:5px 10px;border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center}
+  .vc-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .vc-btn.dl:hover{border-color:var(--accent2);color:var(--accent2)}
+  .empty-output{color:var(--text-dimmer);font-family:'Space Mono',monospace;font-size:10px;padding:24px 0;grid-column:1/-1}
+  ::-webkit-scrollbar{width:4px;height:4px}
+  ::-webkit-scrollbar-track{background:var(--bg2)}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+  @media(max-width:900px){.video-grid{grid-template-columns:repeat(2,1fr)}.ref-grid{grid-template-columns:repeat(4,1fr)}.panel{padding:18px 14px}.badge{display:none}}
+  @media(max-width:500px){.video-grid{grid-template-columns:1fr}.ref-grid{max-width:100%}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">SEEDANCE<span>VIDEO ENGINE</span></div>
+  <div class="badge"><span>FAL.AI</span><span class="dot"></span><span>BYTEDANCE</span><span class="dot"></span><span>SEEDANCE 2.0</span></div>
+  <button class="reset-btn" onclick="resetAll()">↺ reset</button>
+</header>
+
+<div class="panel">
+
+  <div class="section">
+    <div class="section-label">01 — API KEY</div>
+    <div style="max-width:480px;">
+      <div class="input-group">
+        <div class="input-label">FAL.AI API KEY</div>
+        <div class="input-row">
+          <input type="password" id="fal-key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+          <button class="show-btn" onclick="toggleKey('fal-key',this)">show</button>
+        </div>
+        <div class="warn">△ Required for image upload + video generation</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">02 — SOURCE IMAGES (UP TO 8)</div>
+    <div class="ref-grid" id="ref-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">03 — SETTINGS</div>
+    <div class="settings-row">
+      <div class="input-group">
+        <div class="input-label">ASPECT RATIO</div>
+        <select id="aspect">
+          <option value="16:9">16:9 — Landscape</option>
+          <option value="1:1">1:1 — Square</option>
+          <option value="9:16">9:16 — Portrait</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">04 — PROMPT</div>
+    <div class="input-group">
+      <div class="input-label">VIDEO MOTION PROMPT — APPLIED TO ALL IMAGES</div>
+      <textarea id="prompt" rows="7" placeholder="Describe the video motion, camera movement, atmosphere, pacing, and action. No character limit — write as much detail as the scene needs."></textarea>
+    </div>
+  </div>
+
+  <div class="main-acts">
+    <button class="btn-primary" id="run-btn" onclick="runAll()">▶ Generate All Videos</button>
+    <button class="btn-outline" onclick="clearOutputs()">Clear Outputs</button>
+  </div>
+
+  <div class="section">
+    <div class="section-label">05 — OUTPUT</div>
+    <div class="video-grid" id="video-grid">
+      <div class="empty-output">Upload source images above to generate videos.</div>
+    </div>
+  </div>
+
+  <div class="log-section">
+    <div class="log-label">LOG</div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+
+</div>
+
+<script>
+let imgs = new Array(8).fill(null);
+let videoResults = new Array(8).fill(null);
+let running = false;
+
+document.addEventListener('DOMContentLoaded', () => { buildGrid(); buildVideoGrid(); });
+
+function toggleKey(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? 'show' : 'hide';
+}
+
+function buildGrid() {
+  const g = document.getElementById('ref-grid');
+  g.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('div');
+    s.className = 'ref-slot';
+    s.innerHTML = imgs[i]
+      ? `<img src="${imgs[i]}"><input type="file" accept="image/*" onchange="handleImg(${i},this)"><button class="rx" onclick="removeImg(${i},event)">×</button>`
+      : `<span class="plus">+</span><input type="file" accept="image/*" onchange="handleImg(${i},this)">`;
+    g.appendChild(s);
+  }
+  buildVideoGrid();
+}
+
+function handleImg(i, input) {
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => { imgs[i] = e.target.result; buildGrid(); };
+  r.readAsDataURL(f);
+}
+
+function removeImg(i, e) {
+  e.stopPropagation(); e.preventDefault();
+  imgs[i] = null; videoResults[i] = null;
+  buildGrid();
+}
+
+function buildVideoGrid() {
+  const g = document.getElementById('video-grid');
+  const active = imgs.map((img, i) => img ? i : -1).filter(i => i >= 0);
+  if (active.length === 0) {
+    g.innerHTML = '<div class="empty-output">Upload source images above to generate videos.</div>';
+    return;
+  }
+  g.innerHTML = '';
+  active.forEach(i => {
+    const card = document.createElement('div');
+    card.className = 'vc'; card.id = `vc-${i}`;
+    const res = videoResults[i];
+    card.innerHTML = `
+      <div class="vc-hdr">
+        <span class="vc-num">IMAGE ${i + 1}</span>
+        <span class="vc-status" id="vs-${i}">${res ? '✓ done' : '—'}</span>
+      </div>
+      <div class="vc-media" id="vm-${i}">
+        ${res
+          ? `<video src="${res}" controls></video>`
+          : `<img src="${imgs[i]}"><div class="overlay"><span class="lt">awaiting generation</span></div>`}
+      </div>
+      <div class="vc-foot" id="vf-${i}">
+        <button class="vc-btn" onclick="runOne(${i})">▶ generate</button>
+        ${res ? `<a href="${res}" download="seedance-img${i + 1}.mp4" class="vc-btn dl">↓ save</a>` : ''}
+      </div>`;
+    if (res) { card.className = 'vc done'; document.getElementById(`vs-${i}`) && (card.querySelector('.vc-status').className = 'vc-status done'); }
+    g.appendChild(card);
+  });
+}
+
+async function compress(dataUrl, maxPx) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * s), h = Math.round(img.height * s);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', 0.88));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+async function uploadToFAL(dataUrl, apiKey) {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const up = await fetch('https://rest.alpha.fal.ai/storage/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Key ${apiKey}`,
+      'Content-Type': blob.type || 'image/jpeg'
+    },
+    body: blob
+  });
+  if (!up.ok) {
+    const err = await up.text();
+    throw new Error(`FAL upload failed (${up.status}): ${err.substring(0, 120)}`);
+  }
+  const data = await up.json();
+  const url = data.url || data.file_url || data.access_url;
+  if (!url) throw new Error('FAL upload returned no URL');
+  return url;
+}
+
+async function generateVideo(imageUrl, prompt) {
+  const apiKey = document.getElementById('fal-key').value.trim();
+  const res = await fetch('/.netlify/functions/generate-video', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageUrl, prompt, apiKey })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  return data.video?.url || data.output?.video?.url || data.video_url || null;
+}
+
+async function runOne(i) {
+  const apiKey = document.getElementById('fal-key').value.trim();
+  if (!apiKey) { log('error', 'FAL.AI API key required.'); return; }
+  if (!imgs[i]) { log('error', `Image ${i + 1} not loaded.`); return; }
+  const prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) { log('error', 'Prompt required.'); return; }
+
+  const card = document.getElementById(`vc-${i}`);
+  const media = document.getElementById(`vm-${i}`);
+  const status = document.getElementById(`vs-${i}`);
+  const foot = document.getElementById(`vf-${i}`);
+
+  card.className = 'vc running';
+  status.className = 'vc-status running'; status.textContent = 'uploading...';
+  media.innerHTML = `<img src="${imgs[i]}"><div class="overlay"><div class="spinner"></div><span class="lt" id="lt-${i}">uploading image...</span></div>`;
+  foot.innerHTML = '';
+
+  try {
+    log('info', `Image ${i + 1}: compressing and uploading to FAL...`);
+    const compressed = await compress(imgs[i], 1536);
+    const imageUrl = await uploadToFAL(compressed, apiKey);
+
+    const lt = document.getElementById(`lt-${i}`);
+    if (lt) lt.textContent = 'generating video...';
+    status.textContent = 'generating...';
+
+    log('info', `Image ${i + 1}: generating video...`);
+    const videoUrl = await generateVideo(imageUrl, prompt);
+
+    if (!videoUrl) throw new Error('No video URL in response');
+
+    videoResults[i] = videoUrl;
+    card.className = 'vc done';
+    status.className = 'vc-status done'; status.textContent = '✓ done';
+    media.innerHTML = `<video src="${videoUrl}" controls></video>`;
+    foot.innerHTML = `<button class="vc-btn" onclick="runOne(${i})">↺ regen</button><a href="${videoUrl}" download="seedance-img${i + 1}.mp4" class="vc-btn dl">↓ save</a>`;
+    log('success', `Image ${i + 1}: video complete → ${videoUrl}`);
+
+  } catch (e) {
+    card.className = 'vc error';
+    status.className = 'vc-status error'; status.textContent = 'failed';
+    media.innerHTML = `<img src="${imgs[i]}"><div class="overlay"><span class="lt" style="color:var(--red);max-width:90%;text-align:center;">${e.message.substring(0, 100)}</span></div>`;
+    foot.innerHTML = `<button class="vc-btn" onclick="runOne(${i})">↺ retry</button>`;
+    log('error', `Image ${i + 1}: FAILED — ${e.message}`);
+  }
+}
+
+async function runAll() {
+  if (running) return;
+  const active = imgs.map((img, i) => img ? i : -1).filter(i => i >= 0);
+  if (active.length === 0) { log('error', 'No images uploaded.'); return; }
+  running = true;
+  document.getElementById('run-btn').disabled = true;
+  for (const i of active) await runOne(i);
+  running = false;
+  document.getElementById('run-btn').disabled = false;
+  log('info', 'All done ✓');
+}
+
+function clearOutputs() {
+  videoResults = new Array(8).fill(null);
+  buildVideoGrid();
+}
+
+function resetAll() {
+  if (!confirm('Reset everything?')) return;
+  imgs = new Array(8).fill(null);
+  videoResults = new Array(8).fill(null);
+  document.getElementById('fal-key').value = '';
+  document.getElementById('prompt').value = '';
+  document.getElementById('log-box').innerHTML = '';
+  buildGrid();
+}
+
+function log(type, msg) {
+  const b = document.getElementById('log-box');
+  const l = document.createElement('div');
+  l.className = `log-line ${type}`;
+  l.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  b.appendChild(l); b.scrollTop = b.scrollHeight;
+}
+</script>
+</body>
+</html>

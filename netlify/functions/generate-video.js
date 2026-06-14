@@ -8,7 +8,7 @@ exports.handler = async function(event) {
   try {
     const { imageUrl, prompt, apiKey } = JSON.parse(event.body);
     if (!imageUrl || !apiKey) return { statusCode: 400, headers, body: JSON.stringify({ error: 'imageUrl and apiKey required' }) };
-    const payload = JSON.stringify({ image_url: imageUrl, prompt: (prompt || '').substring(0, 200), duration: 5, resolution: '720p' });
+    const payload = JSON.stringify({ image_url: imageUrl, prompt: (prompt || ''), duration: 5, resolution: '720p' });
     const result = await new Promise((resolve, reject) => {
       const req = https.request({ hostname: 'fal.run', path: '/fal-ai/bytedance/seedance/v1/lite/image-to-video', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Key ' + apiKey, 'Content-Length': Buffer.byteLength(payload) } }, (res) => {
         let data = '';
