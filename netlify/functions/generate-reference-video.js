@@ -9,7 +9,7 @@ exports.handler = async function(event) {
   }
   const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
   try {
-    const { imageUrls, prompt, apiKey, quality, aspectRatio } = JSON.parse(event.body);
+    const { imageUrls, prompt, apiKey, quality, aspectRatio, duration, resolution } = JSON.parse(event.body);
     if (!imageUrls || !imageUrls.length || !apiKey) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'imageUrls and apiKey required' }) };
     }
@@ -18,9 +18,9 @@ exports.handler = async function(event) {
     const payload = JSON.stringify({
       image_urls:   imageUrls,
       prompt:       prompt || '',
-      resolution:   '720p',
+      resolution:   resolution || '720p',
       aspect_ratio: aspectRatio || '16:9',
-      duration:     'auto'
+      duration:     duration ? String(duration) : '10'
     });
 
     const result = await new Promise((resolve, reject) => {

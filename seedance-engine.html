@@ -31,6 +31,7 @@
   input:focus,textarea:focus,select:focus{border-color:var(--accent)}
   input[type=password]{letter-spacing:2px}
   textarea{resize:vertical;line-height:1.75}
+  select option:disabled{color:var(--text-dimmer)}
   .show-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);padding:10px 14px;border-radius:4px;cursor:pointer;font-size:11px;white-space:nowrap;font-family:'Space Mono',monospace;transition:all .2s}
   .show-btn:hover{border-color:var(--accent);color:var(--accent)}
   .warn{color:var(--red);font-size:10px;margin-top:4px;font-family:'Space Mono',monospace}
@@ -42,8 +43,14 @@
   .ref-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
   .ref-slot .rx{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.8);border:none;color:var(--red);cursor:pointer;border-radius:3px;width:18px;height:18px;font-size:11px;display:none;align-items:center;justify-content:center}
   .ref-slot:hover .rx{display:flex}
-  .settings-row{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap}
-  .settings-row .input-group{min-width:200px}
+  /* @Image label — shown on all slots in mode 2 */
+  .ref-slot .img-label{position:absolute;bottom:0;left:0;right:0;font-family:'Space Mono',monospace;font-size:9px;text-align:center;padding:3px 0;letter-spacing:1px;pointer-events:none}
+  .ref-slot.slot-empty .img-label{background:rgba(0,0,0,.5);color:var(--text-dimmer)}
+  .ref-slot.slot-loaded .img-label{background:rgba(0,0,0,.72);color:var(--accent)}
+  .settings-row{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap}
+  .settings-row .input-group{min-width:140px}
+  .cost-pill{display:inline-flex;align-items:center;gap:10px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dim);padding:9px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;margin-top:14px}
+  .cost-pill .cost-val{color:var(--accent);font-size:11px;font-weight:700}
   .main-acts{display:flex;gap:12px;margin-bottom:28px;align-items:center}
   .btn-primary{background:var(--accent);color:#0a0a0a;border:none;padding:12px 26px;border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px;transition:all .2s}
   .btn-primary:hover{background:#d4ff40;transform:translateY(-1px)}
@@ -80,17 +87,14 @@
   .vc-btn:hover{border-color:var(--accent);color:var(--accent)}
   .vc-btn.dl:hover{border-color:var(--accent2);color:var(--accent2)}
   .empty-output{color:var(--text-dimmer);font-family:'Space Mono',monospace;font-size:10px;padding:24px 0;grid-column:1/-1}
-  /* mode tabs */
-  .mode-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 32px;background:var(--bg)}
-  .mode-tab{padding:11px 20px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-dim);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;white-space:nowrap}
-  .mode-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-  /* @Image label on ref slots in compile mode */
-  .ref-slot .img-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.72);font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);text-align:center;padding:3px 0;letter-spacing:1px;pointer-events:none}
-  /* compile output */
   .compile-out{margin-top:4px}
   .chk-row{display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0}
   .chk-row input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex-shrink:0}
   .chk-row label{color:var(--text-dim);font-size:12px;cursor:pointer}
+  /* mode tabs */
+  .mode-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 32px;background:var(--bg)}
+  .mode-tab{padding:11px 20px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-dim);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;white-space:nowrap}
+  .mode-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
   ::-webkit-scrollbar{width:4px;height:4px}
   ::-webkit-scrollbar-track{background:var(--bg2)}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -106,8 +110,8 @@
   <button class="reset-btn" onclick="resetAll()">↺ reset</button>
 </header>
 <nav class="mode-tabs">
-  <div class="mode-tab active" id="tab-m1" onclick="switchMode(1)">MODE 1 — SINGLE IMAGE</div>
-  <div class="mode-tab" id="tab-m2" onclick="switchMode(2)">MODE 2 — COMPILE REFERENCES</div>
+  <div class="mode-tab active" id="tab-m2" onclick="switchMode(2)">MODE 2 — COMPILE REFERENCES</div>
+  <div class="mode-tab" id="tab-m1" onclick="switchMode(1)">MODE 1 — SINGLE IMAGE</div>
 </nav>
 
 <div class="panel">
@@ -127,7 +131,7 @@
   </div>
 
   <div class="section">
-    <div class="section-label" id="img-section-label">02 — SOURCE IMAGES (UP TO 8)</div>
+    <div class="section-label" id="img-section-label">02 — REFERENCE IMAGES (UP TO 8) — tag as @Image1 @Image2… in your prompt</div>
     <div class="ref-grid" id="ref-grid"></div>
   </div>
 
@@ -136,46 +140,47 @@
     <div class="settings-row">
       <div class="input-group">
         <div class="input-label">ASPECT RATIO</div>
-        <select id="aspect">
+        <select id="aspect" onchange="updateCost()">
           <option value="16:9">16:9 — Landscape</option>
           <option value="1:1">1:1 — Square</option>
           <option value="9:16">9:16 — Portrait</option>
         </select>
       </div>
-      <div class="input-group" id="quality-toggle" style="display:none;justify-content:flex-end;padding-bottom:2px;">
+      <div class="input-group" id="duration-group">
+        <div class="input-label">DURATION</div>
+        <select id="duration" onchange="updateCost()">
+          <option value="10" selected>10 seconds</option>
+          <option value="15">15 seconds</option>
+        </select>
+      </div>
+      <div class="input-group" id="resolution-group">
+        <div class="input-label">RESOLUTION</div>
+        <select id="resolution" onchange="updateCost()">
+          <option value="720p" selected>720p</option>
+          <option value="1080p" id="res-1080p" disabled>1080p (Quality only)</option>
+        </select>
+      </div>
+      <div class="input-group" id="quality-toggle" style="justify-content:flex-end;padding-bottom:2px;">
         <div class="input-label">MODEL TIER</div>
         <div class="chk-row">
-          <input type="checkbox" id="quality-mode">
+          <input type="checkbox" id="quality-mode" onchange="onQualityChange()">
           <label for="quality-mode">Quality mode (Seedance 2.0 Full — slower, higher cost)</label>
         </div>
       </div>
     </div>
+    <div id="cost-estimate"></div>
   </div>
 
   <div class="section">
     <div class="section-label">04 — PROMPT</div>
     <div class="input-group">
-      <div class="input-label" id="prompt-label">VIDEO MOTION PROMPT — APPLIED TO ALL IMAGES</div>
-      <textarea id="prompt" rows="7" placeholder="Describe the video motion, camera movement, atmosphere, pacing, and action. No character limit — write as much detail as the scene needs."></textarea>
+      <div class="input-label" id="prompt-label">COMPILE PROMPT — USE @Image1 @Image2 ETC + [00:00–00:03] TIMESTAMPS</div>
+      <textarea id="prompt" rows="7" placeholder="Reference images by @Image1, @Image2… Add [00:00-00:05] timestamps to describe what happens in each segment. No character limit."></textarea>
     </div>
   </div>
 
-  <!-- MODE 1 actions + output -->
-  <div id="m1-section">
-    <div class="main-acts">
-      <button class="btn-primary" id="run-btn" onclick="runAll()">▶ Generate All Videos</button>
-      <button class="btn-outline" onclick="clearOutputs()">Clear Outputs</button>
-    </div>
-    <div class="section">
-      <div class="section-label">05 — OUTPUT</div>
-      <div class="video-grid" id="video-grid">
-        <div class="empty-output">Upload source images above to generate videos.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODE 2 actions + output -->
-  <div id="m2-section" style="display:none;">
+  <!-- MODE 2: Compile References (default) -->
+  <div id="m2-section">
     <div class="main-acts">
       <button class="btn-primary" id="compile-btn" onclick="runCompile()">▶ Compile + Generate</button>
       <button class="btn-outline" onclick="clearCompile()">Clear</button>
@@ -186,6 +191,20 @@
         <div style="color:var(--text-dimmer);font-family:'Space Mono',monospace;font-size:10px;padding:24px 0;">
           Upload reference images, write a prompt using @Image1 @Image2 etc, then hit Compile + Generate.
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE 1: Single image per clip -->
+  <div id="m1-section" style="display:none;">
+    <div class="main-acts">
+      <button class="btn-primary" id="run-btn" onclick="runAll()">▶ Generate All Videos</button>
+      <button class="btn-outline" onclick="clearOutputs()">Clear Outputs</button>
+    </div>
+    <div class="section">
+      <div class="section-label">05 — OUTPUT</div>
+      <div class="video-grid" id="video-grid">
+        <div class="empty-output">Upload source images above to generate videos.</div>
       </div>
     </div>
   </div>
@@ -202,9 +221,16 @@ let imgs = new Array(8).fill(null);
 let videoResults = new Array(8).fill(null);
 let compileResult = null;
 let running = false;
-let mode = 1;
+let mode = 2;
 
-document.addEventListener('DOMContentLoaded', () => { buildGrid(); buildVideoGrid(); });
+// Pricing per second (approximate)
+const PRICE = { '720p': 0.30, '1080p': 0.682 };
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildGrid();
+  buildVideoGrid();
+  updateCost();
+});
 
 function switchMode(n) {
   mode = n;
@@ -212,13 +238,41 @@ function switchMode(n) {
   document.getElementById('tab-m2').className = 'mode-tab' + (n === 2 ? ' active' : '');
   document.getElementById('m1-section').style.display = n === 1 ? '' : 'none';
   document.getElementById('m2-section').style.display = n === 2 ? '' : 'none';
-  document.getElementById('quality-toggle').style.display = n === 2 ? 'flex' : 'none';
+  // Mode 2-only controls
+  const m2Only = ['quality-toggle', 'duration-group', 'resolution-group', 'cost-estimate'];
+  m2Only.forEach(id => document.getElementById(id).style.display = n === 2 ? '' : 'none');
   document.getElementById('img-section-label').textContent =
-    n === 1 ? '02 — SOURCE IMAGES (UP TO 8)' : '02 — REFERENCE IMAGES (UP TO 8) — reference as @Image1, @Image2…';
+    n === 1 ? '02 — SOURCE IMAGES (UP TO 8)'
+            : '02 — REFERENCE IMAGES (UP TO 8) — tag as @Image1 @Image2… in your prompt';
   document.getElementById('prompt-label').textContent =
     n === 1 ? 'VIDEO MOTION PROMPT — APPLIED TO ALL IMAGES'
             : 'COMPILE PROMPT — USE @Image1 @Image2 ETC + [00:00–00:03] TIMESTAMPS';
-  buildGrid(); // rebuild to show/hide @Image labels
+  buildGrid();
+  if (n === 2) updateCost();
+}
+
+function onQualityChange() {
+  const quality = document.getElementById('quality-mode').checked;
+  const resEl = document.getElementById('resolution');
+  const opt1080 = document.getElementById('res-1080p');
+  if (!quality) {
+    resEl.value = '720p';
+    opt1080.disabled = true;
+  } else {
+    opt1080.disabled = false;
+  }
+  updateCost();
+}
+
+function updateCost() {
+  const el = document.getElementById('cost-estimate');
+  if (mode !== 2) { el.style.display = 'none'; return; }
+  const dur = parseInt(document.getElementById('duration').value || '10', 10);
+  const res = document.getElementById('resolution').value || '720p';
+  const rate = PRICE[res] || 0.30;
+  const total = (dur * rate).toFixed(2);
+  el.style.display = '';
+  el.innerHTML = `<div class="cost-pill">EST. COST <span class="cost-val">${dur}s @ ${res} ≈ $${total}</span> <span style="color:var(--text-dimmer);font-size:9px;">(~$${rate}/sec)</span></div>`;
 }
 
 function toggleKey(id, btn) {
@@ -232,10 +286,14 @@ function buildGrid() {
   g.innerHTML = '';
   for (let i = 0; i < 8; i++) {
     const s = document.createElement('div');
-    s.className = 'ref-slot';
-    s.innerHTML = imgs[i]
-      ? `<img src="${imgs[i]}"><input type="file" accept="image/*" onchange="handleImg(${i},this)"><button class="rx" onclick="removeImg(${i},event)">×</button>` + (mode === 2 ? `<span class="img-label">@Image${i+1}</span>` : '')
-      : `<span class="plus">+</span><input type="file" accept="image/*" onchange="handleImg(${i},this)">`;
+    const label = mode === 2 ? `<span class="img-label">@Image${i+1}</span>` : '';
+    if (imgs[i]) {
+      s.className = 'ref-slot slot-loaded';
+      s.innerHTML = `<img src="${imgs[i]}"><input type="file" accept="image/*" onchange="handleImg(${i},this)"><button class="rx" onclick="removeImg(${i},event)">×</button>${label}`;
+    } else {
+      s.className = 'ref-slot slot-empty';
+      s.innerHTML = `<span class="plus">+</span><input type="file" accept="image/*" onchange="handleImg(${i},this)">${label}`;
+    }
     g.appendChild(s);
   }
   buildVideoGrid();
@@ -280,7 +338,7 @@ function buildVideoGrid() {
         <button class="vc-btn" onclick="runOne(${i})">▶ generate</button>
         ${res ? `<a href="${res}" download="seedance-img${i + 1}.mp4" class="vc-btn dl">↓ save</a>` : ''}
       </div>`;
-    if (res) { card.className = 'vc done'; document.getElementById(`vs-${i}`) && (card.querySelector('.vc-status').className = 'vc-status done'); }
+    if (res) { card.className = 'vc done'; card.querySelector('.vc-status').className = 'vc-status done'; }
     g.appendChild(card);
   });
 }
@@ -306,15 +364,11 @@ async function uploadToFAL(dataUrl, apiKey) {
   const blob = await res.blob();
   const mime = blob.type || 'image/jpeg';
 
-  // Step 1: initiate — get presigned upload URL + final CDN URL
   const initRes = await fetch(
     'https://rest.alpha.fal.ai/storage/upload/initiate?storage_type=fal-cdn-v3',
     {
       method: 'POST',
-      headers: {
-        'Authorization': `Key ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ content_type: mime, file_name: 'image.jpg' })
     }
   );
@@ -325,7 +379,6 @@ async function uploadToFAL(dataUrl, apiKey) {
   const { upload_url, file_url } = await initRes.json();
   if (!upload_url || !file_url) throw new Error('FAL initiate returned no upload_url/file_url');
 
-  // Step 2: PUT binary to presigned URL (no auth header — it's baked into the presigned URL)
   const putRes = await fetch(upload_url, {
     method: 'PUT',
     headers: { 'Content-Type': mime },
@@ -346,7 +399,6 @@ async function submitVideo(imageUrl, prompt, apiKey) {
   if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
   const requestId = data.request_id;
   if (!requestId) throw new Error('No request_id in queue response');
-  // FAL returns canonical status_url/response_url that differ from the submit path
   return { requestId, statusUrl: data.status_url, responseUrl: data.response_url };
 }
 
@@ -371,9 +423,8 @@ async function pollVideoStatus(requestId, apiKey, statusUrl, responseUrl, labelE
       }
       if (data.status === 'COMPLETED') return data.videoUrl;
       if (data.status === 'FAILED') throw new Error(data.error || 'Seedance generation failed');
-      // IN_QUEUE / IN_PROGRESS / anything else — keep looping
     } catch (e) {
-      if (e.message.includes('FAILED')) throw e; // propagate real failures
+      if (e.message.includes('FAILED')) throw e;
       log('info', `Poll tick ${tick}: ${e.message} — retrying`);
     }
   }
@@ -448,11 +499,11 @@ function clearOutputs() {
   buildVideoGrid();
 }
 
-async function submitReferenceVideo(imageUrls, prompt, apiKey, quality, aspectRatio) {
+async function submitReferenceVideo(imageUrls, prompt, apiKey, quality, aspectRatio, duration, resolution) {
   const res = await fetch('/.netlify/functions/generate-reference-video', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageUrls, prompt, apiKey, quality, aspectRatio })
+    body: JSON.stringify({ imageUrls, prompt, apiKey, quality, aspectRatio, duration, resolution })
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
@@ -473,10 +524,12 @@ async function runCompile() {
   const out = document.getElementById('compile-out');
   const quality = document.getElementById('quality-mode').checked;
   const aspectRatio = document.getElementById('aspect').value;
+  const duration = document.getElementById('duration').value;
+  const resolution = document.getElementById('resolution').value;
   btn.disabled = true;
 
   out.innerHTML = `<div class="vc running" style="max-width:640px;">
-    <div class="vc-hdr"><span class="vc-num">COMPILE — ${loadedIdxs.length} IMAGES</span><span class="vc-status running" id="cs-status">uploading...</span></div>
+    <div class="vc-hdr"><span class="vc-num">COMPILE — ${loadedIdxs.length} REFS · ${duration}s · ${resolution}</span><span class="vc-status running" id="cs-status">uploading...</span></div>
     <div class="vc-media"><div class="overlay"><div class="spinner"></div><span class="lt" id="cs-lt">uploading images...</span></div></div>
   </div>`;
 
@@ -500,7 +553,9 @@ async function runCompile() {
     if (lt) lt.textContent = 'queuing...';
     if (st) st.textContent = 'queuing...';
 
-    const { requestId, statusUrl, responseUrl } = await submitReferenceVideo(imageUrls, prompt, apiKey, quality, aspectRatio);
+    const { requestId, statusUrl, responseUrl } = await submitReferenceVideo(
+      imageUrls, prompt, apiKey, quality, aspectRatio, duration, resolution
+    );
     log('info', `Compile: queued (${requestId}) — polling...`);
     if (lt) lt.textContent = 'generating...';
     if (st) st.textContent = 'generating...';
@@ -510,7 +565,7 @@ async function runCompile() {
 
     compileResult = videoUrl;
     out.innerHTML = `<div class="vc done" style="max-width:640px;">
-      <div class="vc-hdr"><span class="vc-num">COMPILE DONE — ${loadedIdxs.length} REFS</span><span class="vc-status done">✓ done</span></div>
+      <div class="vc-hdr"><span class="vc-num">COMPILE DONE — ${loadedIdxs.length} REFS · ${duration}s · ${resolution}</span><span class="vc-status done">✓ done</span></div>
       <div class="vc-media"><video src="${videoUrl}" controls></video></div>
       <div class="vc-foot"><a href="${videoUrl}" download="seedance-compile.mp4" class="vc-btn dl">↓ save video</a><button class="vc-btn" onclick="runCompile()">↺ regen</button></div>
     </div>`;
@@ -540,6 +595,10 @@ function resetAll() {
   document.getElementById('fal-key').value = '';
   document.getElementById('prompt').value = '';
   document.getElementById('log-box').innerHTML = '';
+  document.getElementById('quality-mode').checked = false;
+  document.getElementById('duration').value = '10';
+  document.getElementById('resolution').value = '720p';
+  onQualityChange();
   clearCompile();
   buildGrid();
 }
