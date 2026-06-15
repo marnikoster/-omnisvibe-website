@@ -156,6 +156,7 @@
       <div class="input-group" id="resolution-group">
         <div class="input-label">RESOLUTION</div>
         <select id="resolution" onchange="updateCost()">
+          <option value="480p">480p</option>
           <option value="720p" selected>720p</option>
           <option value="1080p" id="res-1080p" disabled>1080p (Quality only)</option>
         </select>
@@ -223,8 +224,11 @@ let compileResult = null;
 let running = false;
 let mode = 2;
 
-// Pricing per second (approximate)
-const PRICE = { '720p': 0.30, '1080p': 0.682 };
+// Pricing per second (approximate). 480p differs by tier; 720p/1080p are tier-independent.
+const PRICE = {
+  fast:    { '480p': 0.11, '720p': 0.30, '1080p': 0.682 },
+  quality: { '480p': 0.14, '720p': 0.30, '1080p': 0.682 }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   buildGrid();
@@ -256,7 +260,7 @@ function onQualityChange() {
   const resEl = document.getElementById('resolution');
   const opt1080 = document.getElementById('res-1080p');
   if (!quality) {
-    resEl.value = '720p';
+    if (resEl.value === '1080p') resEl.value = '720p';
     opt1080.disabled = true;
   } else {
     opt1080.disabled = false;
@@ -269,7 +273,8 @@ function updateCost() {
   if (mode !== 2) { el.style.display = 'none'; return; }
   const dur = parseInt(document.getElementById('duration').value || '10', 10);
   const res = document.getElementById('resolution').value || '720p';
-  const rate = PRICE[res] || 0.30;
+  const tier = document.getElementById('quality-mode').checked ? 'quality' : 'fast';
+  const rate = PRICE[tier][res] || 0.30;
   const total = (dur * rate).toFixed(2);
   el.style.display = '';
   el.innerHTML = `<div class="cost-pill">EST. COST <span class="cost-val">${dur}s @ ${res} ≈ $${total}</span> <span style="color:var(--text-dimmer);font-size:9px;">(~$${rate}/sec)</span></div>`;
