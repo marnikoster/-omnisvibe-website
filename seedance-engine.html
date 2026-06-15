@@ -80,6 +80,17 @@
   .vc-btn:hover{border-color:var(--accent);color:var(--accent)}
   .vc-btn.dl:hover{border-color:var(--accent2);color:var(--accent2)}
   .empty-output{color:var(--text-dimmer);font-family:'Space Mono',monospace;font-size:10px;padding:24px 0;grid-column:1/-1}
+  /* mode tabs */
+  .mode-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 32px;background:var(--bg)}
+  .mode-tab{padding:11px 20px;cursor:pointer;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-dim);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;white-space:nowrap}
+  .mode-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  /* @Image label on ref slots in compile mode */
+  .ref-slot .img-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.72);font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);text-align:center;padding:3px 0;letter-spacing:1px;pointer-events:none}
+  /* compile output */
+  .compile-out{margin-top:4px}
+  .chk-row{display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0}
+  .chk-row input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex-shrink:0}
+  .chk-row label{color:var(--text-dim);font-size:12px;cursor:pointer}
   ::-webkit-scrollbar{width:4px;height:4px}
   ::-webkit-scrollbar-track{background:var(--bg2)}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -94,6 +105,10 @@
   <div class="badge"><span>FAL.AI</span><span class="dot"></span><span>BYTEDANCE</span><span class="dot"></span><span>SEEDANCE 2.0</span></div>
   <button class="reset-btn" onclick="resetAll()">↺ reset</button>
 </header>
+<nav class="mode-tabs">
+  <div class="mode-tab active" id="tab-m1" onclick="switchMode(1)">MODE 1 — SINGLE IMAGE</div>
+  <div class="mode-tab" id="tab-m2" onclick="switchMode(2)">MODE 2 — COMPILE REFERENCES</div>
+</nav>
 
 <div class="panel">
 
@@ -112,7 +127,7 @@
   </div>
 
   <div class="section">
-    <div class="section-label">02 — SOURCE IMAGES (UP TO 8)</div>
+    <div class="section-label" id="img-section-label">02 — SOURCE IMAGES (UP TO 8)</div>
     <div class="ref-grid" id="ref-grid"></div>
   </div>
 
@@ -127,26 +142,51 @@
           <option value="9:16">9:16 — Portrait</option>
         </select>
       </div>
+      <div class="input-group" id="quality-toggle" style="display:none;justify-content:flex-end;padding-bottom:2px;">
+        <div class="input-label">MODEL TIER</div>
+        <div class="chk-row">
+          <input type="checkbox" id="quality-mode">
+          <label for="quality-mode">Quality mode (Seedance 2.0 Full — slower, higher cost)</label>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="section">
     <div class="section-label">04 — PROMPT</div>
     <div class="input-group">
-      <div class="input-label">VIDEO MOTION PROMPT — APPLIED TO ALL IMAGES</div>
+      <div class="input-label" id="prompt-label">VIDEO MOTION PROMPT — APPLIED TO ALL IMAGES</div>
       <textarea id="prompt" rows="7" placeholder="Describe the video motion, camera movement, atmosphere, pacing, and action. No character limit — write as much detail as the scene needs."></textarea>
     </div>
   </div>
 
-  <div class="main-acts">
-    <button class="btn-primary" id="run-btn" onclick="runAll()">▶ Generate All Videos</button>
-    <button class="btn-outline" onclick="clearOutputs()">Clear Outputs</button>
+  <!-- MODE 1 actions + output -->
+  <div id="m1-section">
+    <div class="main-acts">
+      <button class="btn-primary" id="run-btn" onclick="runAll()">▶ Generate All Videos</button>
+      <button class="btn-outline" onclick="clearOutputs()">Clear Outputs</button>
+    </div>
+    <div class="section">
+      <div class="section-label">05 — OUTPUT</div>
+      <div class="video-grid" id="video-grid">
+        <div class="empty-output">Upload source images above to generate videos.</div>
+      </div>
+    </div>
   </div>
 
-  <div class="section">
-    <div class="section-label">05 — OUTPUT</div>
-    <div class="video-grid" id="video-grid">
-      <div class="empty-output">Upload source images above to generate videos.</div>
+  <!-- MODE 2 actions + output -->
+  <div id="m2-section" style="display:none;">
+    <div class="main-acts">
+      <button class="btn-primary" id="compile-btn" onclick="runCompile()">▶ Compile + Generate</button>
+      <button class="btn-outline" onclick="clearCompile()">Clear</button>
+    </div>
+    <div class="section">
+      <div class="section-label">05 — COMPILED OUTPUT</div>
+      <div class="compile-out" id="compile-out">
+        <div style="color:var(--text-dimmer);font-family:'Space Mono',monospace;font-size:10px;padding:24px 0;">
+          Upload reference images, write a prompt using @Image1 @Image2 etc, then hit Compile + Generate.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -160,9 +200,26 @@
 <script>
 let imgs = new Array(8).fill(null);
 let videoResults = new Array(8).fill(null);
+let compileResult = null;
 let running = false;
+let mode = 1;
 
 document.addEventListener('DOMContentLoaded', () => { buildGrid(); buildVideoGrid(); });
+
+function switchMode(n) {
+  mode = n;
+  document.getElementById('tab-m1').className = 'mode-tab' + (n === 1 ? ' active' : '');
+  document.getElementById('tab-m2').className = 'mode-tab' + (n === 2 ? ' active' : '');
+  document.getElementById('m1-section').style.display = n === 1 ? '' : 'none';
+  document.getElementById('m2-section').style.display = n === 2 ? '' : 'none';
+  document.getElementById('quality-toggle').style.display = n === 2 ? 'flex' : 'none';
+  document.getElementById('img-section-label').textContent =
+    n === 1 ? '02 — SOURCE IMAGES (UP TO 8)' : '02 — REFERENCE IMAGES (UP TO 8) — reference as @Image1, @Image2…';
+  document.getElementById('prompt-label').textContent =
+    n === 1 ? 'VIDEO MOTION PROMPT — APPLIED TO ALL IMAGES'
+            : 'COMPILE PROMPT — USE @Image1 @Image2 ETC + [00:00–00:03] TIMESTAMPS';
+  buildGrid(); // rebuild to show/hide @Image labels
+}
 
 function toggleKey(id, btn) {
   const el = document.getElementById(id);
@@ -177,7 +234,7 @@ function buildGrid() {
     const s = document.createElement('div');
     s.className = 'ref-slot';
     s.innerHTML = imgs[i]
-      ? `<img src="${imgs[i]}"><input type="file" accept="image/*" onchange="handleImg(${i},this)"><button class="rx" onclick="removeImg(${i},event)">×</button>`
+      ? `<img src="${imgs[i]}"><input type="file" accept="image/*" onchange="handleImg(${i},this)"><button class="rx" onclick="removeImg(${i},event)">×</button>` + (mode === 2 ? `<span class="img-label">@Image${i+1}</span>` : '')
       : `<span class="plus">+</span><input type="file" accept="image/*" onchange="handleImg(${i},this)">`;
     g.appendChild(s);
   }
@@ -391,13 +448,99 @@ function clearOutputs() {
   buildVideoGrid();
 }
 
+async function submitReferenceVideo(imageUrls, prompt, apiKey, quality, aspectRatio) {
+  const res = await fetch('/.netlify/functions/generate-reference-video', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageUrls, prompt, apiKey, quality, aspectRatio })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  const requestId = data.request_id;
+  if (!requestId) throw new Error('No request_id in reference queue response');
+  return { requestId, statusUrl: data.status_url, responseUrl: data.response_url };
+}
+
+async function runCompile() {
+  const apiKey = document.getElementById('fal-key').value.trim();
+  if (!apiKey) { log('error', 'FAL.AI API key required.'); return; }
+  const prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) { log('error', 'Prompt required.'); return; }
+  const loadedIdxs = imgs.map((img, i) => img ? i : -1).filter(i => i >= 0);
+  if (loadedIdxs.length === 0) { log('error', 'No reference images uploaded.'); return; }
+
+  const btn = document.getElementById('compile-btn');
+  const out = document.getElementById('compile-out');
+  const quality = document.getElementById('quality-mode').checked;
+  const aspectRatio = document.getElementById('aspect').value;
+  btn.disabled = true;
+
+  out.innerHTML = `<div class="vc running" style="max-width:640px;">
+    <div class="vc-hdr"><span class="vc-num">COMPILE — ${loadedIdxs.length} IMAGES</span><span class="vc-status running" id="cs-status">uploading...</span></div>
+    <div class="vc-media"><div class="overlay"><div class="spinner"></div><span class="lt" id="cs-lt">uploading images...</span></div></div>
+  </div>`;
+
+  try {
+    log('info', `Compile: uploading ${loadedIdxs.length} reference images...`);
+    const imageUrls = [];
+    for (let n = 0; n < loadedIdxs.length; n++) {
+      const i = loadedIdxs[n];
+      const lt = document.getElementById('cs-lt');
+      const st = document.getElementById('cs-status');
+      if (lt) lt.textContent = `uploading @Image${n+1} (${n+1}/${loadedIdxs.length})...`;
+      if (st) st.textContent = `uploading ${n+1}/${loadedIdxs.length}`;
+      const compressed = await compress(imgs[i], 1536);
+      const url = await uploadToFAL(compressed, apiKey);
+      imageUrls.push(url);
+      log('info', `Compile: @Image${n+1} uploaded → ${url}`);
+    }
+
+    const lt = document.getElementById('cs-lt');
+    const st = document.getElementById('cs-status');
+    if (lt) lt.textContent = 'queuing...';
+    if (st) st.textContent = 'queuing...';
+
+    const { requestId, statusUrl, responseUrl } = await submitReferenceVideo(imageUrls, prompt, apiKey, quality, aspectRatio);
+    log('info', `Compile: queued (${requestId}) — polling...`);
+    if (lt) lt.textContent = 'generating...';
+    if (st) st.textContent = 'generating...';
+
+    const videoUrl = await pollVideoStatus(requestId, apiKey, statusUrl, responseUrl, document.getElementById('cs-lt'));
+    if (!videoUrl) throw new Error('No video URL in compile result');
+
+    compileResult = videoUrl;
+    out.innerHTML = `<div class="vc done" style="max-width:640px;">
+      <div class="vc-hdr"><span class="vc-num">COMPILE DONE — ${loadedIdxs.length} REFS</span><span class="vc-status done">✓ done</span></div>
+      <div class="vc-media"><video src="${videoUrl}" controls></video></div>
+      <div class="vc-foot"><a href="${videoUrl}" download="seedance-compile.mp4" class="vc-btn dl">↓ save video</a><button class="vc-btn" onclick="runCompile()">↺ regen</button></div>
+    </div>`;
+    log('success', `Compile: video complete → ${videoUrl}`);
+  } catch (e) {
+    out.innerHTML = `<div class="vc error" style="max-width:640px;">
+      <div class="vc-hdr"><span class="vc-num">COMPILE FAILED</span><span class="vc-status error">failed</span></div>
+      <div class="vc-media"><div class="overlay"><span class="lt" style="color:var(--red);max-width:90%;text-align:center;">${e.message.substring(0, 120)}</span></div></div>
+      <div class="vc-foot"><button class="vc-btn" onclick="runCompile()">↺ retry</button></div>
+    </div>`;
+    log('error', `Compile FAILED: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function clearCompile() {
+  compileResult = null;
+  document.getElementById('compile-out').innerHTML = '<div style="color:var(--text-dimmer);font-family:\'Space Mono\',monospace;font-size:10px;padding:24px 0;">Upload reference images, write a prompt using @Image1 @Image2 etc, then hit Compile + Generate.</div>';
+}
+
 function resetAll() {
   if (!confirm('Reset everything?')) return;
   imgs = new Array(8).fill(null);
   videoResults = new Array(8).fill(null);
+  compileResult = null;
   document.getElementById('fal-key').value = '';
   document.getElementById('prompt').value = '';
   document.getElementById('log-box').innerHTML = '';
+  clearCompile();
   buildGrid();
 }
 
